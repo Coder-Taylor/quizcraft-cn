@@ -18,3 +18,4 @@ web-app/dist/
 # Local runtime data
 question_stats.json
 tmp_sources/
+.ace-tool/

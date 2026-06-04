@@ -52,6 +52,8 @@ export interface PracticeState {
   currentIndex: number;
   answers: Record<string, any>;  // questionId -> answer
   results: Record<string, boolean>;  // questionId -> isCorrect
+  correctAnswers: Record<string, any>;  // questionId -> correctAnswer
+  analyses: Record<string, string>;  // questionId -> analysis
   startTime: number;
   isFinished: boolean;
 }

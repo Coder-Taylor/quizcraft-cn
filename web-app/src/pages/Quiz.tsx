@@ -143,43 +143,52 @@ export default function Quiz() {
   
   const [selectedAnswer, setSelectedAnswer] = useState<any>(null);
   const [showResult, setShowResult] = useState(false);
-  const [result, setResult] = useState<{correct: boolean; analysis?: string; correctAnswer?: any} | null>(null);
   const [loading, setLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
-  
+
+  const currentIndex = practice?.currentIndex ?? -1;
+
   useEffect(() => {
     if (!practice) {
       navigate('/practice');
       return;
     }
-    
-    // 恢复当前题目的状态
-    const currentQ = practice.questions[practice.currentIndex];
+
+    const currentQ = practice.questions[currentIndex];
     if (currentQ && practice.answers[currentQ.id] !== undefined) {
       setSelectedAnswer(practice.answers[currentQ.id]);
       setShowResult(true);
     } else {
       setSelectedAnswer(null);
       setShowResult(false);
-      setResult(null);
     }
-  }, [practice, navigate]);
-  
-  // 计时器
+  }, [currentIndex, navigate]);
+
+  const startTime = practice?.startTime;
+  const isFinished = practice?.isFinished ?? false;
+
   useEffect(() => {
-    if (!practice || practice.isFinished) return;
-    
+    if (!startTime || isFinished) return;
+
     const timer = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - practice.startTime) / 1000));
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
-    
+
     return () => clearInterval(timer);
-  }, [practice]);
+  }, [startTime, isFinished]);
   
   if (!practice) return null;
-  
+
   const currentQuestion = practice.questions[practice.currentIndex];
   const progress = ((practice.currentIndex + 1) / practice.questions.length) * 100;
+
+  const result = practice.answers[currentQuestion.id] !== undefined
+    ? {
+        correct: practice.results[currentQuestion.id],
+        correctAnswer: practice.correctAnswers[currentQuestion.id],
+        analysis: practice.analyses[currentQuestion.id],
+      }
+    : null;
   
   const handleOptionSelect = async (index: number) => {
     if (showResult || loading) return;
@@ -210,17 +219,17 @@ export default function Quiz() {
     setLoading(true);
     try {
       const res = await practiceApi.submitAnswer(currentBank, currentQuestion.id, answer);
-      
-      setResult({
-        correct: res.correct,
-        analysis: res.analysis,
-        correctAnswer: res.correct_answer,
-      });
+
       setShowResult(true);
-      
-      answerQuestion(currentQuestion.id, answer, res.correct);
-    } catch (error) {
-      console.error('提交答案失败:', error);
+      answerQuestion({
+        questionId: currentQuestion.id,
+        answer,
+        isCorrect: res.correct,
+        correctAnswer: res.correct_answer,
+        analysis: res.analysis,
+      });
+    } catch {
+      alert('提交答案失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -231,7 +240,6 @@ export default function Quiz() {
       nextQuestion();
       setSelectedAnswer(null);
       setShowResult(false);
-      setResult(null);
     } else {
       finishPractice();
       navigate('/result');

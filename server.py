@@ -1116,8 +1116,10 @@ async def extract_parse(file: UploadFile = File(...)):
         suffix_lower = suffix.lower()
         if suffix_lower == '.pdf':
             text = extract_text_from_pdf(tmp_path)
+            questions = parse_questions_from_text(text)
         elif suffix_lower in ['.docx', '.doc']:
             text = extract_text_from_docx(tmp_path)
+            questions = parse_questions_from_docx(tmp_path)
         elif suffix_lower == '.json':
             text = content.decode('utf-8-sig')
             questions = parse_questions_from_json_text(text)
@@ -1129,10 +1131,8 @@ async def extract_parse(file: UploadFile = File(...)):
             }
         else:
             text = content.decode('utf-8-sig')
-        
-        # 解析题目
-        questions = parse_questions_from_text(text)
-        
+            questions = parse_questions_from_text(text)
+
         return {
             "content": text[:1000] + "..." if len(text) > 1000 else text,
             "questions": questions
@@ -1163,6 +1163,109 @@ def extract_text_from_docx(path: str) -> str:
         return "\n".join([p.text for p in doc.paragraphs])
     except ImportError:
         raise HTTPException(status_code=500, detail="需要安装 python-docx: pip install python-docx")
+
+
+def parse_questions_from_docx(path: str) -> List[Dict]:
+    """按段落结构解析 Word 题库，避免题干中的 IP/版本号被误判成新题号。"""
+    try:
+        from docx import Document
+    except ImportError:
+        raise HTTPException(status_code=500, detail="需要安装 python-docx: pip install python-docx")
+
+    question_start_pattern = re.compile(r'^(?P<number>\d+)[、.．]\s*(?P<content>.+)$')
+    option_pattern = re.compile(r'^(?P<label>[A-F])[、.．]\s*(?P<text>.+)$')
+    answer_pattern = re.compile(r'^答案\s*[：:]\s*(?P<answer>.+)$')
+    analysis_pattern = re.compile(r'^(?:解析|答案解析)\s*[：:]\s*(?P<analysis>.*)$')
+    type_pattern = re.compile(r'【(?P<type>单选题|多选题|判断题)】')
+
+    doc = Document(path)
+    paragraphs = [re.sub(r'\s+', ' ', p.text).strip() for p in doc.paragraphs if p.text and p.text.strip()]
+    questions: List[Dict[str, Any]] = []
+    current: Optional[Dict[str, Any]] = None
+    analysis_lines: List[str] = []
+    chapter_name = "默认章节"
+    chapter_id = "ch01"
+
+    def finalize_current():
+        nonlocal current, analysis_lines
+        if not current:
+            return
+        current["content"] = re.sub(r'\s+', ' ', current["content"]).strip()
+        current["options"] = [re.sub(r'\s+', ' ', option).strip() for option in current["options"] if option.strip()]
+        current["analysis"] = re.sub(r'\s+', ' ', " ".join(analysis_lines or [current["analysis"]])).strip()
+        if current["type"] == "judge" and not current["options"]:
+            current["options"] = None
+        questions.append(current)
+        current = None
+        analysis_lines = []
+
+    def ensure_current(number: str, raw_content: str):
+        nonlocal current, analysis_lines
+        finalize_current()
+        content = raw_content.strip()
+        q_type = "single"
+        type_match = type_pattern.search(content)
+        if type_match:
+            type_map = {"单选题": "single", "多选题": "multi", "判断题": "judge"}
+            q_type = type_map[type_match.group("type")]
+            content = type_pattern.sub("", content, count=1).strip()
+        current = {
+            "id": f"q{len(questions) + 1:04d}",
+            "number": str(number),
+            "type": q_type,
+            "content": content,
+            "options": [],
+            "answer": "",
+            "analysis": "",
+            "chapter": chapter_name,
+            "chapter_id": chapter_id,
+        }
+        analysis_lines = []
+
+    for paragraph in paragraphs:
+        question_match = question_start_pattern.match(paragraph)
+        if question_match:
+            ensure_current(question_match.group("number"), question_match.group("content"))
+            continue
+
+        if current is None:
+            continue
+
+        answer_match = answer_pattern.match(paragraph)
+        if answer_match:
+            answer_text = answer_match.group("answer").strip()
+            answer_letters = extract_choice_letters(answer_text)
+            if answer_letters:
+                current["answer"] = "".join(answer_letters)
+                if len(answer_letters) > 1:
+                    current["type"] = "multi"
+            else:
+                current["answer"] = answer_text
+            continue
+
+        analysis_match = analysis_pattern.match(paragraph)
+        if analysis_match:
+            analysis_head = analysis_match.group("analysis").strip()
+            analysis_lines = [analysis_head] if analysis_head else []
+            continue
+
+        option_match = option_pattern.match(paragraph)
+        if option_match:
+            current["options"].append(option_match.group("text").strip())
+            continue
+
+        if analysis_lines:
+            analysis_lines.append(paragraph)
+            continue
+
+        if current["options"]:
+            current["options"][-1] = f"{current['options'][-1]} {paragraph}".strip()
+            continue
+
+        current["content"] = f"{current['content']} {paragraph}".strip()
+
+    finalize_current()
+    return questions
 
 
 def _answer_to_text(answer: Any, q_type: str) -> str:

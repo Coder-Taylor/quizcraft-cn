@@ -23,7 +23,7 @@ interface QuizState {
   // 练习状态
   practice: PracticeState | null;
   startPractice: (questions: Question[]) => void;
-  answerQuestion: (questionId: string, answer: any, isCorrect: boolean) => void;
+  answerQuestion: (payload: { questionId: string; answer: any; isCorrect: boolean; correctAnswer?: any; analysis?: string }) => void;
   nextQuestion: () => void;
   prevQuestion: () => void;
   finishPractice: () => void;
@@ -84,20 +84,31 @@ export const useQuizStore = create<QuizState>()(
           currentIndex: 0,
           answers: {},
           results: {},
+          correctAnswers: {},
+          analyses: {},
           startTime: Date.now(),
           isFinished: false,
         },
       }),
-      
-      answerQuestion: (questionId, answer, isCorrect) => {
+
+      answerQuestion: ({ questionId, answer, isCorrect, correctAnswer, analysis }) => {
         const { practice } = get();
         if (!practice) return;
-        
+
+        const newCorrectAnswers = correctAnswer !== undefined
+          ? { ...practice.correctAnswers, [questionId]: correctAnswer }
+          : practice.correctAnswers;
+        const newAnalyses = analysis !== undefined
+          ? { ...practice.analyses, [questionId]: analysis }
+          : practice.analyses;
+
         set({
           practice: {
             ...practice,
             answers: { ...practice.answers, [questionId]: answer },
             results: { ...practice.results, [questionId]: isCorrect },
+            correctAnswers: newCorrectAnswers,
+            analyses: newAnalyses,
           },
         });
         
