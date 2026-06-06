@@ -2,7 +2,19 @@
 
 GitHub 仓库：<https://github.com/jry21223/quizcraft-cn>
 
-基于 React + TypeScript + FastAPI 重构的刷题系统，支持智能题库提取和 AI 解析生成。
+基于 React + TypeScript + FastAPI + PostgreSQL 的刷题系统，支持智能题库提取、AI 解析生成、排行榜统计和生产部署。题库内容仍保留在 `tiku/*.json` 中用于版本化，运行统计和迁移审计进入 PostgreSQL。
+
+## 当前技术选型
+
+| 层级 | 技术 | 用途 |
+|------|------|------|
+| 前端 | React 18、TypeScript 5、Vite 5 | 单页应用、开发服务和生产构建 |
+| UI 与状态 | Tailwind CSS、Framer Motion、Zustand、React Router、Chart.js、Lucide React | 页面样式、动画、客户端状态、路由、统计图表和图标 |
+| 后端 | Python 3.11、FastAPI、Pydantic v2、Uvicorn | REST API、WebSocket 进度推送、请求校验和 ASGI 服务 |
+| 数据库 | PostgreSQL、psycopg 3 | 用户统计、排行榜、题目统计、题库元数据和题目快照 |
+| 题库内容 | `tiku/*.json` + PostgreSQL 双写 | JSON 继续作为可版本化题库源，DB 用于运行统计、审计和后续切库准备 |
+| 文件与 AI | PyPDF2、python-docx、httpx、OpenAI/DeepSeek/自定义兼容接口 | PDF/Word/TXT 导入和 AI 解析生成 |
+| 部署 | Nginx、systemd、环境文件 | 静态前端托管、`/api`/`/ws` 反代、后端进程管理和密钥配置 |
 
 ## ✨ 新特性
 
@@ -18,13 +30,15 @@ GitHub 仓库：<https://github.com/jry21223/quizcraft-cn>
 - 🚀 **高性能**：基于 FastAPI 的异步处理
 - 📚 **多格式支持**：兼容新旧题库格式
 - 🔧 **自动转换**：自动将旧格式转换为新标准
-- 💾 **数据持久化**：排行榜和用户数据本地存储
+- 💾 **PostgreSQL 持久化**：排行榜、用户统计、题目统计和题库快照进入数据库
+- 🔐 **管理接口保护**：题库提取、AI 解析、导出和保存接口需要 `X-Admin-Token`
 
 ### 题库提取工具
 - 📄 **多格式导入**：支持 PDF、Word、TXT
 - 🤖 **AI 解析**：使用 OpenAI/DeepSeek 生成答案解析
 - ✏️ **可视化编辑**：提取后可编辑题目内容
 - 💾 **一键导出**：导出为标准 JSON 格式
+- 🔁 **题库双写**：保存题库时同时写入 `tiku/{key}.json` 和 PostgreSQL
 
 ## 🚀 快速开始
 
@@ -82,6 +96,8 @@ DATABASE_URL=postgresql://quizcraft:change-me@127.0.0.1:5432/quizcraft
 ADMIN_TOKEN=change-me
 ```
 
+生产环境必须配置 `ADMIN_TOKEN`，并用 `CORS_ORIGINS` 显式写出允许访问的前端来源。默认 CORS 只允许本地开发地址，不再使用 `*`。
+
 部署示例在 `deploy/`：
 
 - `quizcraft-cn.env.example`：systemd 环境文件模板
@@ -106,6 +122,8 @@ ADMIN_TOKEN=change-me
 .venv/bin/python scripts/smoke_backend.py
 ```
 
+迁移脚本会把旧 `rankings_v2.json` 和 `question_stats.json` 导入 PostgreSQL。题库校验脚本会检查 JSON 与 DB 中的题库 key、题目数量、题目 ID 和答案字段是否一致。
+
 运行时数据已经迁移到 PostgreSQL；`rankings_v2.json` 和 `question_stats.json` 不应再提交到 Git。
 
 ### 6. Electron 桌面端（可选）
@@ -121,28 +139,43 @@ npm run dev
 
 ```
 .
-├── server.py              # FastAPI 后端
-├── requirements.txt       # Python 依赖
-├── start.sh              # 一键启动脚本
-├── README.md             # 项目说明
+├── server.py                    # FastAPI 后端入口
+├── db_storage.py                # PostgreSQL 数据访问层
+├── requirements.txt             # Python 依赖
+├── start.sh                     # 本地开发启动脚本
+├── start_ops.sh                 # 本地 ops 预览脚本
+├── README.md                    # 项目说明
 │
-├── web-app/              # React 前端
+├── scripts/                    # 安装、构建、迁移和 smoke test 脚本
+│   ├── install_deps.sh
+│   ├── build_ops.sh
+│   ├── run_backend.sh
+│   ├── migrate_rankings_to_db.py
+│   ├── check_bank_db_consistency.py
+│   └── smoke_backend.py
+│
+├── deploy/                     # 生产部署模板
+│   ├── quizcraft-cn.env.example
+│   ├── quizcraft-cn.service.example
+│   └── nginx.conf.example
+│
+├── web-app/                    # React 前端
 │   ├── src/
-│   │   ├── components/   # 组件
-│   │   ├── pages/        # 页面
-│   │   ├── stores/       # 状态管理 (Zustand)
-│   │   ├── api/          # API 客户端
-│   │   ├── types/        # TypeScript 类型
-│   │   └── utils/        # 工具函数
+│   │   ├── components/         # 组件
+│   │   ├── pages/              # 页面
+│   │   ├── stores/             # 状态管理 (Zustand)
+│   │   ├── api/                # API 客户端
+│   │   ├── types/              # TypeScript 类型
+│   │   └── utils/              # 工具函数
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── electron-app/         # Electron 桌面端壳
+├── electron-app/               # Electron 桌面端壳
 │   ├── main.js
 │   ├── preload.js
 │   └── package.json
 │
-└── tiku/                 # 题库数据
+└── tiku/                       # 版本化题库 JSON
 ```
 
 ## 🎯 使用指南
@@ -164,6 +197,20 @@ npm run dev
 3. **检查编辑**：核对题目内容，手动修正
 4. **生成解析**（可选）：配置 API Key，AI 自动生成解析
 5. **导出题库**：下载标准 JSON 格式文件
+
+题库提取、AI 解析、导出和保存属于管理操作，需要在页面中配置管理 Token。对应接口会校验请求头 `X-Admin-Token`：
+
+- `POST /api/extract/parse`
+- `POST /api/extract/analyze`
+- `POST /api/extract/export`
+- `POST /api/banks/save`
+
+普通刷题接口保持公开：
+
+- `GET /api/banks`
+- `POST /api/practice/start`
+- `POST /api/practice/submit`
+- `GET /api/ranking`
 
 ## 🔧 配置 AI 解析
 
