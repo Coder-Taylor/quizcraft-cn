@@ -63,7 +63,7 @@ export default function Layout() {
       <footer className="border-t border-white/70 bg-white/55 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-4 py-6 text-center">
           <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
-            <p>刷题助手 · React + TypeScript 重构版</p>
+            <p>刷题助手 · Jerry</p>
             <a
               href="https://github.com/jry21223/quizcraft-cn"
               target="_blank"
@@ -71,7 +71,7 @@ export default function Layout() {
               className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:border-primary-200 hover:text-primary-600"
             >
               <Github className="h-3.5 w-3.5" />
-              <span>源码已开源，可自行部署</span>
+              <span>开源项目，可自行部署</span>
             </a>
           </div>
         </div>
