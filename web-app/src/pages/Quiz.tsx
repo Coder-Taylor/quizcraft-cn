@@ -1,29 +1,50 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { animate, AnimatePresence, motion, useMotionValue } from 'framer-motion';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Flag, 
-  CheckCircle2, 
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  animate,
+  AnimatePresence,
+  motion,
+  useMotionValue,
+} from "framer-motion";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  CheckCircle2,
   XCircle,
   BookOpen,
-  Timer
-} from 'lucide-react';
-import { useQuizStore } from '@/stores/quizStore';
-import { practiceApi } from '@/api/client';
-import { formatQuestionType, formatAnswer, getTypeColor, getDifficultyLabel } from '@/utils/format';
-import type { Question, QuestionType } from '@/types';
+  Timer,
+} from "lucide-react";
+import { useQuizStore } from "@/stores/quizStore";
+import { practiceApi } from "@/api/client";
+import {
+  formatQuestionType,
+  formatAnswer,
+  getTypeColor,
+  getDifficultyLabel,
+} from "@/utils/format";
+import type { Question, QuestionType } from "@/types";
 
-const isAnswerCorrect = (answer: any, correctAnswer: any, type: QuestionType) => {
-  if (type === 'judge') {
+const isAnswerCorrect = (
+  answer: any,
+  correctAnswer: any,
+  type: QuestionType,
+) => {
+  if (type === "judge") {
     return Boolean(answer) === Boolean(correctAnswer);
   }
 
-  if (type === 'multi') {
-    const selected = Array.isArray(answer) ? [...answer].map(Number).sort() : [];
-    const correct = Array.isArray(correctAnswer) ? [...correctAnswer].map(Number).sort() : [];
-    return selected.length === correct.length && selected.every((value, index) => value === correct[index]);
+  if (type === "multi") {
+    const selected = Array.isArray(answer)
+      ? [...answer].map(Number).sort()
+      : [];
+    const correct = Array.isArray(correctAnswer)
+      ? [...correctAnswer].map(Number).sort()
+      : [];
+    return (
+      selected.length === correct.length &&
+      selected.every((value, index) => value === correct[index])
+    );
   }
 
   return Number(answer) === Number(correctAnswer);
@@ -46,7 +67,10 @@ type SwipeStart = {
 };
 
 const shouldIgnoreSwipeTarget = (target: EventTarget | null) => {
-  return target instanceof HTMLElement && Boolean(target.closest('[data-swipe-ignore="true"]'));
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest('[data-swipe-ignore="true"]'))
+  );
 };
 
 const clampSwipeDrag = (value: number) => {
@@ -54,9 +78,13 @@ const clampSwipeDrag = (value: number) => {
 };
 
 const cardVariants = {
-  enter: (direction: SwipeDirection) => ({ x: direction * CARD_TRANSITION_OFFSET }),
+  enter: (direction: SwipeDirection) => ({
+    x: direction * CARD_TRANSITION_OFFSET,
+  }),
   center: { x: 0 },
-  exit: (direction: SwipeDirection) => ({ x: direction * -CARD_TRANSITION_OFFSET }),
+  exit: (direction: SwipeDirection) => ({
+    x: direction * -CARD_TRANSITION_OFFSET,
+  }),
 };
 
 const getProgressDotClass = ({
@@ -71,18 +99,18 @@ const getProgressDotClass = ({
   starred: boolean;
 }) => {
   if (starred) {
-    return current ? 'bg-yellow-400 w-4' : 'bg-yellow-400';
+    return current ? "bg-yellow-400 w-4" : "bg-yellow-400";
   }
 
   if (current) {
-    return 'bg-primary-500 w-4';
+    return "bg-primary-500 w-4";
   }
 
   if (answered) {
-    return correct ? 'bg-green-400' : 'bg-red-400';
+    return correct ? "bg-green-400" : "bg-red-400";
   }
 
-  return 'bg-gray-200';
+  return "bg-gray-200";
 };
 
 type ProgressDotsProps = {
@@ -102,14 +130,20 @@ const ProgressDots = memo(function ProgressDots({
   starredQuestions,
   onJump,
 }: ProgressDotsProps) {
-  const starredSet = useMemo(() => new Set(starredQuestions), [starredQuestions]);
+  const starredSet = useMemo(
+    () => new Set(starredQuestions),
+    [starredQuestions],
+  );
 
   if (!questions.length) {
     return null;
   }
 
   const start = Math.max(0, currentIndex - PROGRESS_DOT_WINDOW_RADIUS);
-  const end = Math.min(questions.length, currentIndex + PROGRESS_DOT_WINDOW_RADIUS + 1);
+  const end = Math.min(
+    questions.length,
+    currentIndex + PROGRESS_DOT_WINDOW_RADIUS + 1,
+  );
 
   const renderDot = (question: Question, idx: number) => {
     const answered = answers[question.id] !== undefined;
@@ -119,12 +153,14 @@ const ProgressDots = memo(function ProgressDots({
         key={`${question.id}-${idx}`}
         onClick={() => onJump(idx)}
         aria-label={`跳到第 ${idx + 1} 题`}
-        className={`w-2 h-2 rounded-full transition-colors ${getProgressDotClass({
-          current: idx === currentIndex,
-          answered,
-          correct: results[question.id],
-          starred: starredSet.has(question.id),
-        })}`}
+        className={`w-2 h-2 rounded-full transition-colors ${getProgressDotClass(
+          {
+            current: idx === currentIndex,
+            answered,
+            correct: results[question.id],
+            starred: starredSet.has(question.id),
+          },
+        )}`}
       />
     );
   };
@@ -139,9 +175,9 @@ const ProgressDots = memo(function ProgressDots({
           </>
         )}
 
-        {questions.slice(start, end).map((question, offset) =>
-          renderDot(question, start + offset)
-        )}
+        {questions
+          .slice(start, end)
+          .map((question, offset) => renderDot(question, start + offset))}
 
         {end < questions.length && (
           <>
@@ -172,47 +208,55 @@ function OptionButton({
   showResult: boolean;
   onClick: () => void;
 }) {
-  let bgClass = 'bg-white border-gray-200 hover:border-primary-300';
-  
+  let bgClass = "bg-white border-gray-200 hover:border-primary-300";
+
   if (showResult) {
     if (correct && selected) {
-      bgClass = 'bg-green-50 border-green-500 text-green-800';
+      bgClass = "bg-green-50 border-green-500 text-green-800";
     } else if (missed) {
-      bgClass = 'bg-green-50 border-green-200 text-green-700';
+      bgClass = "bg-green-50 border-green-200 text-green-700";
     } else if (selected) {
-      bgClass = 'bg-red-50 border-red-500 text-red-800';
+      bgClass = "bg-red-50 border-red-500 text-red-800";
     } else {
-      bgClass = 'bg-gray-50 border-gray-200 text-gray-400';
+      bgClass = "bg-gray-50 border-gray-200 text-gray-400";
     }
   } else if (selected) {
-    bgClass = 'bg-primary-50 border-primary-500 text-primary-700';
+    bgClass = "bg-primary-50 border-primary-500 text-primary-700";
   }
-  
+
   return (
     <button
       onClick={onClick}
       disabled={showResult}
       className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-colors ${bgClass}`}
     >
-      <span className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-        showResult 
-          ? correct && selected
-            ? 'bg-green-500 text-white'
-            : missed
-              ? 'bg-green-200 text-green-700'
-            : selected 
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-200 text-gray-500'
-          : selected 
-            ? 'bg-primary-500 text-white'
-            : 'bg-gray-100 text-gray-600'
-      }`}>
+      <span
+        className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+          showResult
+            ? correct && selected
+              ? "bg-green-500 text-white"
+              : missed
+                ? "bg-green-200 text-green-700"
+                : selected
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-200 text-gray-500"
+            : selected
+              ? "bg-primary-500 text-white"
+              : "bg-gray-100 text-gray-600"
+        }`}
+      >
         {label}
       </span>
       <span className="flex-1 pt-1">{text}</span>
-      {showResult && correct && selected && <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />}
-      {showResult && missed && <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-1" />}
-      {showResult && selected && !correct && <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-1" />}
+      {showResult && correct && selected && (
+        <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
+      )}
+      {showResult && missed && (
+        <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-1" />
+      )}
+      {showResult && selected && !correct && (
+        <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-1" />
+      )}
     </button>
   );
 }
@@ -230,27 +274,27 @@ function JudgeButtons({
   onSelect: (value: boolean) => void;
 }) {
   const options = [
-    { value: true, label: '对', icon: CheckCircle2 },
-    { value: false, label: '错', icon: XCircle },
+    { value: true, label: "对", icon: CheckCircle2 },
+    { value: false, label: "错", icon: XCircle },
   ];
-  
+
   return (
     <div className="flex gap-4">
       {options.map((opt) => {
         const isSelected = selected === opt.value;
         const isCorrect = showResult && correct === opt.value;
-        
-        let btnClass = 'bg-white border-gray-200 hover:border-primary-300';
+
+        let btnClass = "bg-white border-gray-200 hover:border-primary-300";
         if (showResult) {
           if (correct === opt.value) {
-            btnClass = 'bg-green-50 border-green-500 text-green-800';
+            btnClass = "bg-green-50 border-green-500 text-green-800";
           } else if (isSelected) {
-            btnClass = 'bg-red-50 border-red-500 text-red-800';
+            btnClass = "bg-red-50 border-red-500 text-red-800";
           }
         } else if (isSelected) {
-          btnClass = 'bg-primary-50 border-primary-500 text-primary-700';
+          btnClass = "bg-primary-50 border-primary-500 text-primary-700";
         }
-        
+
         return (
           <button
             key={opt.label}
@@ -258,7 +302,9 @@ function JudgeButtons({
             disabled={showResult}
             className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl border-2 font-medium transition-colors ${btnClass}`}
           >
-            <opt.icon className={`w-5 h-5 ${isCorrect ? 'text-green-500' : isSelected && showResult ? 'text-red-500' : ''}`} />
+            <opt.icon
+              className={`w-5 h-5 ${isCorrect ? "text-green-500" : isSelected && showResult ? "text-red-500" : ""}`}
+            />
             {opt.label}
           </button>
         );
@@ -269,22 +315,23 @@ function JudgeButtons({
 
 export default function Quiz() {
   const navigate = useNavigate();
-  const { 
-    practice, 
+  const {
+    practice,
     currentBank,
-    answerQuestion, 
-    nextQuestion, 
+    answerQuestion,
+    nextQuestion,
     prevQuestion,
     jumpToQuestion,
     finishPractice,
     toggleStar,
     starredQuestions,
   } = useQuizStore();
-  
+
   const [selectedAnswer, setSelectedAnswer] = useState<any>(null);
   const [showResult, setShowResult] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [transitionDirection, setTransitionDirection] = useState<SwipeDirection>(1);
+  const [transitionDirection, setTransitionDirection] =
+    useState<SwipeDirection>(1);
   const dragX = useMotionValue(0);
   const dragXRef = useRef(0);
   const swipeStartRef = useRef<SwipeStart | null>(null);
@@ -293,7 +340,7 @@ export default function Quiz() {
 
   useEffect(() => {
     if (!practice) {
-      navigate('/practice');
+      navigate("/practice");
       return;
     }
 
@@ -305,7 +352,7 @@ export default function Quiz() {
       setSelectedAnswer(null);
       setShowResult(false);
     }
-  }, [currentIndex, navigate]);
+  }, [practice, currentIndex, navigate]);
 
   const startTime = practice?.startTime;
   const isFinished = practice?.isFinished ?? false;
@@ -319,26 +366,28 @@ export default function Quiz() {
 
     return () => clearInterval(timer);
   }, [startTime, isFinished]);
-  
+
   if (!practice) return null;
 
   const currentQuestion = practice.questions[practice.currentIndex];
   if (!currentQuestion) return null;
 
-  const progress = ((practice.currentIndex + 1) / practice.questions.length) * 100;
+  const progress =
+    ((practice.currentIndex + 1) / practice.questions.length) * 100;
 
-  const result = practice.answers[currentQuestion.id] !== undefined
-    ? {
-        correct: practice.results[currentQuestion.id],
-        correctAnswer: practice.correctAnswers[currentQuestion.id],
-        analysis: practice.analyses[currentQuestion.id],
-      }
-    : null;
-  
+  const result =
+    practice.answers[currentQuestion.id] !== undefined
+      ? {
+          correct: practice.results[currentQuestion.id],
+          correctAnswer: practice.correctAnswers[currentQuestion.id],
+          analysis: practice.analyses[currentQuestion.id],
+        }
+      : null;
+
   const handleOptionSelect = (index: number) => {
     if (showResult) return;
-    
-    if (currentQuestion.type === 'multi') {
+
+    if (currentQuestion.type === "multi") {
       // 多选题：切换选择
       const current = (selectedAnswer as number[]) || [];
       const newAnswer = current.includes(index)
@@ -351,19 +400,23 @@ export default function Quiz() {
       submitAnswer(index);
     }
   };
-  
+
   const handleJudgeSelect = (value: boolean) => {
     if (showResult) return;
     setSelectedAnswer(value);
     submitAnswer(value);
   };
-  
+
   const submitAnswer = (answer: any) => {
     if (!currentBank || !currentQuestion) return;
 
     const questionId = currentQuestion.id;
     const localCorrectAnswer = currentQuestion.answer;
-    const localIsCorrect = isAnswerCorrect(answer, localCorrectAnswer, currentQuestion.type);
+    const localIsCorrect = isAnswerCorrect(
+      answer,
+      localCorrectAnswer,
+      currentQuestion.type,
+    );
 
     setShowResult(true);
     answerQuestion({
@@ -374,7 +427,8 @@ export default function Quiz() {
       analysis: currentQuestion.analysis,
     });
 
-    void practiceApi.submitAnswer(currentBank, questionId, answer)
+    void practiceApi
+      .submitAnswer(currentBank, questionId, answer)
       .then((res) => {
         // 以后如果后端隐藏答案或规则调整，以后端结果为准进行一次轻量校正。
         answerQuestion({
@@ -386,12 +440,16 @@ export default function Quiz() {
         });
       })
       .catch((error) => {
-        console.error('同步答题统计失败:', error);
+        console.error("同步答题统计失败:", error);
       });
   };
 
   const handleMultiSubmit = () => {
-    if (!selectedAnswer || (selectedAnswer as number[]).length === 0 || showResult) {
+    if (
+      !selectedAnswer ||
+      (selectedAnswer as number[]).length === 0 ||
+      showResult
+    ) {
       return;
     }
     submitAnswer(selectedAnswer);
@@ -402,7 +460,7 @@ export default function Quiz() {
     dragXRef.current = 0;
 
     if (animateBack) {
-      animate(dragX, 0, { duration: 0.12, ease: 'easeOut' });
+      animate(dragX, 0, { duration: 0.12, ease: "easeOut" });
     } else {
       dragX.set(0);
     }
@@ -413,7 +471,7 @@ export default function Quiz() {
     dragXRef.current = clamped;
     dragX.set(clamped);
   };
-  
+
   const handleNext = () => {
     resetSwipeState(false);
     setTransitionDirection(1);
@@ -423,10 +481,10 @@ export default function Quiz() {
       setShowResult(false);
     } else {
       finishPractice();
-      navigate('/result');
+      navigate("/result");
     }
   };
-  
+
   const handlePrev = () => {
     resetSwipeState(false);
     setTransitionDirection(-1);
@@ -484,13 +542,16 @@ export default function Quiz() {
     }
 
     const changedTouch = event.changedTouches[0];
-    const fallbackDeltaX = changedTouch ? changedTouch.clientX - start.x : dragXRef.current;
+    const fallbackDeltaX = changedTouch
+      ? changedTouch.clientX - start.x
+      : dragXRef.current;
     const fallbackDeltaY = changedTouch ? changedTouch.clientY - start.y : 0;
     const finalX = clampSwipeDrag(start.currentX || fallbackDeltaX);
     const finalIsHorizontal =
       start.horizontal ||
       (Math.abs(fallbackDeltaX) >= SWIPE_THRESHOLD &&
-        Math.abs(fallbackDeltaX) >= Math.abs(fallbackDeltaY) * SWIPE_DIRECTION_RATIO);
+        Math.abs(fallbackDeltaX) >=
+          Math.abs(fallbackDeltaY) * SWIPE_DIRECTION_RATIO);
 
     if (!finalIsHorizontal || Math.abs(finalX) < SWIPE_THRESHOLD) {
       resetSwipeState();
@@ -511,18 +572,18 @@ export default function Quiz() {
 
     resetSwipeState();
   };
-  
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
-  
+
   const starred = starredQuestions.includes(currentQuestion.id);
-  const difficulty = currentQuestion.stats 
+  const difficulty = currentQuestion.stats
     ? getDifficultyLabel(currentQuestion.stats.rate)
     : null;
-  
+
   return (
     <div className="max-w-3xl mx-auto">
       {/* 顶部进度条 */}
@@ -530,7 +591,9 @@ export default function Quiz() {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <BookOpen className="w-4 h-4" />
-            <span>题目 {practice.currentIndex + 1} / {practice.questions.length}</span>
+            <span>
+              题目 {practice.currentIndex + 1} / {practice.questions.length}
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 text-sm text-gray-500">
@@ -539,20 +602,20 @@ export default function Quiz() {
             </div>
             <button
               onClick={() => toggleStar(currentQuestion.id)}
-              className={`p-1.5 rounded-lg transition-colors ${starred ? 'text-yellow-500 bg-yellow-50' : 'text-gray-400 hover:bg-gray-100'}`}
+              className={`p-1.5 rounded-lg transition-colors ${starred ? "text-yellow-500 bg-yellow-50" : "text-gray-400 hover:bg-gray-100"}`}
             >
-              <Flag className={`w-4 h-4 ${starred ? 'fill-current' : ''}`} />
+              <Flag className={`w-4 h-4 ${starred ? "fill-current" : ""}`} />
             </button>
           </div>
         </div>
         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full bg-primary-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
-      
+
       {/* 题目卡片 */}
       <AnimatePresence custom={transitionDirection} mode="wait">
         <motion.div
@@ -562,7 +625,7 @@ export default function Quiz() {
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ duration: 0.16, ease: 'easeOut' }}
+          transition={{ duration: 0.16, ease: "easeOut" }}
         >
           <motion.div
             style={{ x: dragX }}
@@ -574,25 +637,31 @@ export default function Quiz() {
           >
             {/* 题目信息 */}
             <div className="flex items-center gap-2 mb-4">
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${getTypeColor(currentQuestion.type)}`}>
+              <span
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium ${getTypeColor(currentQuestion.type)}`}
+              >
                 {formatQuestionType(currentQuestion.type)}
               </span>
               {difficulty && (
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${difficulty.color}`}>
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium ${difficulty.color}`}
+                >
                   {difficulty.label} · 正确率 {currentQuestion.stats?.rate}%
                 </span>
               )}
-              <span className="text-xs text-gray-400">{currentQuestion.chapter}</span>
+              <span className="text-xs text-gray-400">
+                {currentQuestion.chapter}
+              </span>
             </div>
-            
+
             {/* 题目内容 */}
             <h2 className="text-lg font-medium text-gray-800 mb-6 leading-relaxed">
               {currentQuestion.content}
             </h2>
-            
+
             {/* 选项区域 */}
             <div className="space-y-3 mb-6">
-              {currentQuestion.type === 'judge' ? (
+              {currentQuestion.type === "judge" ? (
                 <JudgeButtons
                   selected={selectedAnswer}
                   correct={result?.correctAnswer}
@@ -601,21 +670,22 @@ export default function Quiz() {
                 />
               ) : (
                 currentQuestion.options?.map((option, index) => {
-                  const isSelected = currentQuestion.type === 'multi'
-                    ? (selectedAnswer as number[])?.includes(index)
-                    : selectedAnswer === index;
+                  const isSelected =
+                    currentQuestion.type === "multi"
+                      ? (selectedAnswer as number[])?.includes(index)
+                      : selectedAnswer === index;
 
                   const isCorrect = showResult
-                    ? currentQuestion.type === 'multi'
+                    ? currentQuestion.type === "multi"
                       ? (result?.correctAnswer as number[])?.includes(index)
                       : result?.correctAnswer === index
                     : undefined;
 
                   const isMissed = Boolean(
                     showResult &&
-                    currentQuestion.type === 'multi' &&
+                    currentQuestion.type === "multi" &&
                     isCorrect &&
-                    !isSelected
+                    !isSelected,
                   );
 
                   return (
@@ -633,30 +703,34 @@ export default function Quiz() {
                 })
               )}
             </div>
-            
+
             {/* 多选题提交按钮 */}
-            {currentQuestion.type === 'multi' && !showResult && (
+            {currentQuestion.type === "multi" && !showResult && (
               <button
                 onClick={handleMultiSubmit}
-                disabled={!selectedAnswer || (selectedAnswer as number[]).length === 0}
+                disabled={
+                  !selectedAnswer || (selectedAnswer as number[]).length === 0
+                }
                 className="w-full py-3 bg-primary-500 text-white font-medium rounded-xl hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4"
               >
                 提交答案
               </button>
             )}
-            
+
             {/* 结果展示 */}
             {showResult && result && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`rounded-xl p-4 mb-4 ${result.correct ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}
+                className={`rounded-xl p-4 mb-4 ${result.correct ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100"}`}
               >
                 <div className="flex items-center gap-2 mb-2">
                   {result.correct ? (
                     <>
                       <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      <span className="font-medium text-green-800">回答正确！</span>
+                      <span className="font-medium text-green-800">
+                        回答正确！
+                      </span>
                     </>
                   ) : (
                     <>
@@ -665,24 +739,29 @@ export default function Quiz() {
                     </>
                   )}
                 </div>
-                
+
                 {!result.correct && (
                   <div className="text-sm text-gray-700 mb-2">
-                    正确答案：<span className="font-medium text-green-700">
+                    正确答案：
+                    <span className="font-medium text-green-700">
                       {formatAnswer(result.correctAnswer, currentQuestion.type)}
                     </span>
                   </div>
                 )}
-                
+
                 {result.analysis && (
                   <div className="mt-3 pt-3 border-t border-gray-200/50">
-                    <div className="text-sm font-medium text-gray-700 mb-1">解析</div>
-                    <div className="text-sm text-gray-600 leading-relaxed">{result.analysis}</div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">
+                      解析
+                    </div>
+                    <div className="text-sm text-gray-600 leading-relaxed">
+                      {result.analysis}
+                    </div>
                   </div>
                 )}
               </motion.div>
             )}
-            
+
             {/* 导航按钮 */}
             <div className="pt-4 border-t border-gray-100">
               <div className="flex items-center justify-between gap-2">
@@ -694,16 +773,18 @@ export default function Quiz() {
                   <ChevronLeft className="w-5 h-5" />
                   上一题
                 </button>
-                
+
                 <button
                   onClick={handleNext}
                   className="flex items-center gap-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors flex-shrink-0"
                 >
-                  {practice.currentIndex === practice.questions.length - 1 ? '查看结果' : '下一题'}
+                  {practice.currentIndex === practice.questions.length - 1
+                    ? "查看结果"
+                    : "下一题"}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <ProgressDots
                 questions={practice.questions}
                 currentIndex={practice.currentIndex}
