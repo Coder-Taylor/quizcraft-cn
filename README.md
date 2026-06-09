@@ -95,6 +95,7 @@ CORS_ORIGINS=https://your-domain.example
 DATABASE_URL=postgresql://quizcraft:change-me@127.0.0.1:5432/quizcraft
 ADMIN_TOKEN=change-me
 DISABLED_BANK_KEYS=h3c_2026_team_mock,h3cne
+VITE_DONATE_QR_URL=https://your-qrcode.example/wechat-receive.png
 ```
 
 生产环境必须配置 `ADMIN_TOKEN`，并用 `CORS_ORIGINS` 显式写出允许访问的前端来源。默认 CORS 只允许本地开发地址，不再使用 `*`。
@@ -113,6 +114,13 @@ DISABLED_BANK_KEYS=h3c_2026_team_mock,h3cne
 ```
 
 `start_ops.sh` 不再安装依赖，只负责构建并启动本地预览。依赖安装请显式运行 `scripts/install_deps.sh`。
+
+`Buy me a coffee` 弹窗二维码可通过前端环境变量配置（`web-app/.env.ops`）：
+
+```bash
+VITE_DONATE_QR_URL=https://你的二维码图片链接
+# 未配置时回退到 /wechat-receive-qrcode.png
+```
 
 ### 5. 数据迁移与校验
 

@@ -1,7 +1,17 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BookOpen, Trophy, FileText, Home, Github, Swords } from 'lucide-react';
+import {
+  BookOpen,
+  Trophy,
+  FileText,
+  Home,
+  Github,
+  Swords,
+  Heart,
+  X,
+} from 'lucide-react';
 import clsx from 'clsx';
 import { IS_OPS_MODE } from '@/config/appMode';
+import { useEffect, useState } from 'react';
 
 const navItems = IS_OPS_MODE
   ? [
@@ -15,10 +25,32 @@ const navItems = IS_OPS_MODE
       { path: '/extract', icon: FileText, label: '题库工坊' },
       { path: '/ranking', icon: Trophy, label: '排行榜' },
       { path: '/beetle', icon: Swords, label: '斗蛐蛐' },
-    ];
+  ];
+
+const donateQrUrl =
+  (import.meta.env.VITE_DONATE_QR_URL?.trim()) || '/wechat-receive-qrcode.png';
 
 export default function Layout() {
   const location = useLocation();
+  const [showDonateModal, setShowDonateModal] = useState(false);
+  const [qrLoadFailed, setQrLoadFailed] = useState(false);
+
+  useEffect(() => {
+    if (!showDonateModal) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowDonateModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [showDonateModal]);
   
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-gray-50 to-white">
@@ -64,6 +96,17 @@ export default function Layout() {
         <div className="max-w-5xl mx-auto px-4 py-6 text-center">
           <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
             <p>刷题助手 · Jerry</p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDonateModal(true);
+                setQrLoadFailed(false);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1.5 text-xs font-medium text-yellow-700 transition-colors hover:border-yellow-300 hover:bg-yellow-100"
+            >
+              <Heart className="h-3.5 w-3.5" />
+              <span>Buy me a coffee</span>
+            </button>
             <a
               href="https://github.com/jry21223/quizcraft-cn"
               target="_blank"
@@ -76,6 +119,45 @@ export default function Layout() {
           </div>
         </div>
       </footer>
+
+      {showDonateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setShowDonateModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">支持作者</h2>
+              <button
+                type="button"
+                onClick={() => setShowDonateModal(false)}
+                className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 transition-colors"
+                aria-label="关闭"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">微信扫码支持 · 感谢支持</p>
+            <div className="rounded-xl border border-gray-100 p-3 flex items-center justify-center bg-gray-50">
+              {qrLoadFailed ? (
+                <p className="text-xs text-gray-500 leading-relaxed text-center">
+                  未配置微信收款码，请在 VITE_DONATE_QR_URL 中配置图片链接
+                </p>
+              ) : (
+                <img
+                  src={donateQrUrl}
+                  alt="微信收款码"
+                  className="w-full max-w-[240px] rounded-lg border border-gray-100"
+                  onError={() => setQrLoadFailed(true)}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
