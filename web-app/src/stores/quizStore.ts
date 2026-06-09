@@ -45,6 +45,18 @@ interface QuizState {
   isStarred: (questionId: string) => boolean;
 }
 
+const valueEquals = (left: any, right: any): boolean => {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right)) return false;
+    return (
+      left.length === right.length &&
+      left.every((value, index) => Object.is(value, right[index]))
+    );
+  }
+
+  return Object.is(left, right);
+};
+
 export const useQuizStore = create<QuizState>()(
   persist(
     (set, get) => ({
@@ -94,6 +106,23 @@ export const useQuizStore = create<QuizState>()(
       answerQuestion: ({ questionId, answer, isCorrect, correctAnswer, analysis }) => {
         const { practice } = get();
         if (!practice) return;
+
+        const answerUnchanged = valueEquals(practice.answers[questionId], answer);
+        const resultUnchanged = practice.results[questionId] === isCorrect;
+        const correctAnswerUnchanged =
+          correctAnswer === undefined ||
+          valueEquals(practice.correctAnswers[questionId], correctAnswer);
+        const analysisUnchanged =
+          analysis === undefined || practice.analyses[questionId] === analysis;
+
+        if (
+          answerUnchanged &&
+          resultUnchanged &&
+          correctAnswerUnchanged &&
+          analysisUnchanged
+        ) {
+          return;
+        }
 
         const newCorrectAnswers = correctAnswer !== undefined
           ? { ...practice.correctAnswers, [questionId]: correctAnswer }

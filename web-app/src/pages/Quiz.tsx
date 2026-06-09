@@ -1,4 +1,11 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import {
   animate,
@@ -53,7 +60,7 @@ const isAnswerCorrect = (
 const SWIPE_THRESHOLD = 50;
 const SWIPE_DIRECTION_RATIO = 1.25;
 const SWIPE_MAX_DRAG = 120;
-const CARD_TRANSITION_OFFSET = 24;
+const CARD_TRANSITION_OFFSET = 32;
 const PROGRESS_DOT_WINDOW_RADIUS = 40;
 
 type SwipeDirection = -1 | 1;
@@ -80,10 +87,12 @@ const clampSwipeDrag = (value: number) => {
 const cardVariants = {
   enter: (direction: SwipeDirection) => ({
     x: direction * CARD_TRANSITION_OFFSET,
+    opacity: 0,
   }),
-  center: { x: 0 },
+  center: { x: 0, opacity: 1 },
   exit: (direction: SwipeDirection) => ({
     x: direction * -CARD_TRANSITION_OFFSET,
+    opacity: 0,
   }),
 };
 
@@ -347,8 +356,11 @@ export default function Quiz() {
   useEffect(() => {
     if (!hasPractice) {
       navigate("/practice");
-      return;
     }
+  }, [hasPractice, navigate]);
+
+  useLayoutEffect(() => {
+    if (!hasPractice) return;
 
     if (activeAnswer !== undefined) {
       setSelectedAnswer(activeAnswer);
@@ -357,7 +369,7 @@ export default function Quiz() {
       setSelectedAnswer(null);
       setShowResult(false);
     }
-  }, [hasPractice, activeQuestionId, activeAnswer, navigate]);
+  }, [hasPractice, activeQuestionId, activeAnswer]);
 
   const startTime = practice?.startTime;
   const isFinished = practice?.isFinished ?? false;
@@ -474,13 +486,27 @@ export default function Quiz() {
     dragX.set(clamped);
   };
 
+  const resetQuestionViewState = () => {
+    setSelectedAnswer(null);
+    setShowResult(false);
+  };
+
+  const handleJump = (index: number) => {
+    if (!practice || index === practice.currentIndex) return;
+    if (index < 0 || index >= practice.questions.length) return;
+
+    resetSwipeState(false);
+    setTransitionDirection(index > practice.currentIndex ? 1 : -1);
+    resetQuestionViewState();
+    jumpToQuestion(index);
+  };
+
   const handleNext = () => {
     resetSwipeState(false);
     setTransitionDirection(1);
     if (practice.currentIndex < practice.questions.length - 1) {
+      resetQuestionViewState();
       nextQuestion();
-      setSelectedAnswer(null);
-      setShowResult(false);
     } else {
       finishPractice();
       navigate("/result");
@@ -490,6 +516,7 @@ export default function Quiz() {
   const handlePrev = () => {
     resetSwipeState(false);
     setTransitionDirection(-1);
+    resetQuestionViewState();
     prevQuestion();
   };
 
@@ -612,14 +639,18 @@ export default function Quiz() {
         </div>
         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-primary-500 transition-all duration-300"
+            className="h-full bg-primary-500 transition-all duration-[120ms]"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       {/* 题目卡片 */}
-      <AnimatePresence custom={transitionDirection} mode="wait">
+      <AnimatePresence
+        custom={transitionDirection}
+        initial={false}
+        mode="popLayout"
+      >
         <motion.div
           key={activeQuestion.id}
           custom={transitionDirection}
@@ -627,7 +658,7 @@ export default function Quiz() {
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ duration: 0.16, ease: "easeOut" }}
+          transition={{ duration: 0.12, ease: "easeOut" }}
         >
           <motion.div
             style={{ x: dragX }}
@@ -721,9 +752,7 @@ export default function Quiz() {
 
             {/* 结果展示 */}
             {showResult && result && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div
                 className={`rounded-xl p-4 mb-4 ${result.correct ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100"}`}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -761,7 +790,7 @@ export default function Quiz() {
                     </div>
                   </div>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {/* 导航按钮 */}
@@ -793,7 +822,7 @@ export default function Quiz() {
                 answers={practice.answers}
                 results={practice.results}
                 starredQuestions={starredQuestions}
-                onJump={jumpToQuestion}
+                onJump={handleJump}
               />
             </div>
           </motion.div>
