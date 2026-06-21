@@ -5,6 +5,7 @@ import {
   FileText,
   Home,
   MessageSquare,
+  Dices,
   Github,
   Heart,
   X,
@@ -18,6 +19,7 @@ const navItems = IS_OPS_MODE
       { path: '/practice', icon: BookOpen, label: '刷题' },
       { path: '/ranking', icon: Trophy, label: '排行榜' },
       { path: '/feedback', icon: MessageSquare, label: '反馈' },
+      { path: '/wheel', icon: Dices, label: '随机大转盘' },
     ]
   : [
       { path: '/', icon: Home, label: '首页' },
@@ -25,6 +27,7 @@ const navItems = IS_OPS_MODE
       { path: '/extract', icon: FileText, label: '题库工坊' },
       { path: '/ranking', icon: Trophy, label: '排行榜' },
       { path: '/feedback', icon: MessageSquare, label: '反馈' },
+      { path: '/wheel', icon: Dices, label: '随机大转盘' },
   ];
 
 const donateQrUrl =
