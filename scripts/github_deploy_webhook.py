@@ -79,6 +79,9 @@ changed_deps="$(git diff --name-only "${{pull_before}}" "${{pull_after}}" -- req
 if [ -n "${{changed_deps}}" ]; then
   echo "[deploy] dependency files changed; running scripts/install_deps.sh"
   ./scripts/install_deps.sh
+elif [ ! -d "web-app/node_modules" ] || [ ! -f "web-app/node_modules/.bin/vite" ]; then
+  echo "[deploy] node_modules missing or incomplete; running scripts/install_deps.sh"
+  ./scripts/install_deps.sh
 else
   echo "[deploy] dependency files unchanged; skipping install_deps.sh"
 fi
