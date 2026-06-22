@@ -19,6 +19,26 @@ type FeedbackResponse = {
   created_at: string;
 };
 
+type WheelResponse = {
+  wheels: Array<{
+    id: number | string;
+    owner_user_id: string;
+    owner_name: string;
+    items: string[];
+    is_public: boolean;
+    updated_at: string;
+  }>;
+};
+
+type WheelSaveResponse = {
+  id: number | string;
+  owner_user_id: string;
+  owner_name: string;
+  items: string[];
+  is_public: boolean;
+  updated_at: string;
+};
+
 type UserStatsResponse = {
   user_id: string;
   name?: string;
@@ -257,6 +277,18 @@ export const userApi = {
 export const feedbackApi = {
   submit: (payload: FeedbackPayload): Promise<FeedbackResponse> => {
     return api.post('/feedback', payload);
+  },
+};
+
+export const wheelApi = {
+  get: (): Promise<WheelResponse> => {
+    return api.get('/wheel');
+  },
+  save: (
+    items: string[],
+    userId: string,
+  ): Promise<WheelSaveResponse> => {
+    return api.post('/wheel', { items, user_id: userId });
   },
 };
 

@@ -151,6 +151,11 @@ class UserRequest(BaseModel):
     name: Optional[str] = None
 
 
+class FoodWheelRequest(BaseModel):
+    items: List[str]
+    user_id: str
+
+
 class AnalysisConfig(BaseModel):
     provider: str = "deepseek"
     apiKey: str = ""
@@ -197,6 +202,7 @@ EXPORT_DIR = os.path.join(BASE_DIR, "exports")
 RANK_FILE = os.path.join(BASE_DIR, "rankings_v2.json")
 QUESTION_STATS_FILE = os.path.join(BASE_DIR, "question_stats.json")
 FEEDBACK_FILE = os.path.join(BASE_DIR, "feedbacks.json")
+FOOD_WHEEL_FILE = os.path.join(BASE_DIR, "food_wheel_items.json")
 API_CONFIG_CACHE: Dict[str, Tuple[float, List["LLMConfig"]]] = {}
 API_CONFIG_CACHE_TTL = 30 * 60  # 30 分钟
 QUESTION_GLOBAL_STATS: Dict[str, Dict[str, Dict[str, float]]] = defaultdict(dict)
@@ -209,6 +215,15 @@ BANK_COLOR_PALETTE = [
     "#00838f",
     "#5d4037",
     "#7b1fa2",
+]
+DEFAULT_FOOD_WHEEL_ITEMS = [
+    "板面",
+    "香扒饭",
+    "摇滚炒鸡",
+    "盖浇饭",
+    "烤肉拌饭",
+    "麻辣烫",
+    "麦当劳",
 ]
 
 JUDGE_TRUE_VALUES = {
@@ -655,6 +670,149 @@ def save_question_stats():
         print(f"保存题目统计失败: {e}")
 
 
+def _normalize_food_wheel_items(values) -> List[str]:
+    if not isinstance(values, list):
+        return []
+
+    normalized: List[str] = []
+    seen = set()
+    for value in values:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return normalized
+
+
+def _load_local_wheels() -> List[Dict[str, Any]]:
+    if not os.path.exists(FOOD_WHEEL_FILE):
+        return []
+
+    try:
+        with open(FOOD_WHEEL_FILE, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except Exception as e:
+        print(f"加载美食转盘本地文件失败: {e}")
+        return []
+
+    raw_records: List[Any] = []
+    if isinstance(payload, dict):
+        records = payload.get("wheels")
+        if isinstance(records, list):
+            raw_records = records
+        elif isinstance(payload.get("items"), list):
+            legacy = payload.get("items")
+            raw_records = [
+                {
+                    "id": 1,
+                    "owner_user_id": "legacy",
+                    "owner_name": "legacy",
+                    "items": legacy,
+                    "is_public": True,
+                }
+            ]
+    elif isinstance(payload, list):
+        raw_records = payload
+
+    normalized_records: List[Dict[str, Any]] = []
+    now = datetime.now().isoformat()
+    for raw in raw_records:
+        if not isinstance(raw, dict):
+            continue
+
+        owner_user_id = str(raw.get("owner_user_id") or "legacy").strip()
+        items = _normalize_food_wheel_items(raw.get("items"))
+        is_public = bool(raw.get("is_public", True))
+        if not is_public:
+            continue
+        try:
+            wheel_id = int(raw.get("id"))
+        except Exception:
+            wheel_id = 0
+
+        normalized_records.append(
+            {
+                "id": wheel_id,
+                "owner_user_id": owner_user_id,
+                "owner_name": str(raw.get("owner_name") or owner_user_id).strip() or owner_user_id,
+                "items": items,
+                "is_public": True,
+                "created_at": str(raw.get("created_at") or now),
+                "updated_at": str(raw.get("updated_at") or now),
+            }
+        )
+
+    normalized_records.sort(key=lambda item: item.get("updated_at", now), reverse=True)
+    return normalized_records
+
+
+def save_food_wheel_items(user_id: str, values: List[str]) -> Dict[str, Any]:
+    normalized = _normalize_food_wheel_items(values)
+    user_id = str(user_id or "").strip()
+    normalized_name = user_id or "legacy"
+    now = datetime.now().isoformat()
+
+    if db_runtime_enabled():
+        return db_storage.upsert_food_wheel_items(user_id, normalized)
+
+    records = _load_local_wheels()
+    next_id = 1
+    updated = False
+
+    for i, record in enumerate(records):
+        if str(record.get("owner_user_id") or "") == user_id:
+            record["items"] = normalized
+            record["owner_name"] = normalized_name
+            record["is_public"] = True
+            record["updated_at"] = now
+            if not record.get("created_at"):
+                record["created_at"] = now
+            records[i] = record
+            updated = True
+            break
+    else:
+        max_id = 0
+        for record in records:
+            try:
+                max_id = max(max_id, int(record.get("id", 0)))
+            except Exception:
+                continue
+        next_id = max_id + 1
+        records.append(
+            {
+                "id": next_id,
+                "owner_user_id": user_id,
+                "owner_name": normalized_name,
+                "items": normalized,
+                "is_public": True,
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
+
+    records.sort(key=lambda item: str(item.get("updated_at") or now), reverse=True)
+    payload = {"wheels": records}
+
+    with open(FOOD_WHEEL_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    if updated:
+        for record in records:
+            if str(record.get("owner_user_id") or "") == user_id:
+                return record
+
+    return {
+        "id": next_id,
+        "owner_user_id": user_id,
+        "owner_name": normalized_name,
+        "items": normalized,
+        "is_public": True,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+
 def load_question_stats():
     """加载全站题目统计"""
     if db_runtime_enabled():
@@ -675,6 +833,18 @@ def load_question_stats():
                 QUESTION_GLOBAL_STATS[bank] = stats
     except Exception as e:
         print(f"加载题目统计失败: {e}")
+
+
+def load_food_wheel_items():
+    """加载美食转盘（仅公开列表）"""
+    if db_runtime_enabled():
+        try:
+            return db_storage.list_food_wheel_items()
+        except Exception as e:
+            print(f"从 PostgreSQL 加载美食转盘失败: {e}")
+            return []
+
+    return _load_local_wheels()
 
 
 def _normalize_feedback_suggestion(value: str) -> str:
@@ -1149,6 +1319,7 @@ async def lifespan(app: FastAPI):
     sync_question_banks_to_db()
     load_rankings()
     load_question_stats()
+    load_food_wheel_items()
     refresh_question_cache()
     print(f"📚 已加载 {len(QUESTION_BANKS)} 个题库")
     yield
@@ -1429,6 +1600,38 @@ async def get_ranking():
 
     ranking.sort(key=lambda x: (-x["correct"], -x["accuracy"]))
     return {"ranking": ranking}
+
+
+@app.get("/api/wheel")
+async def get_food_wheel():
+    wheels = load_food_wheel_items()
+    if not wheels:
+        wheels = []
+    return {
+        "wheels": wheels,
+    }
+
+
+@app.post("/api/wheel")
+async def update_food_wheel(request: FoodWheelRequest):
+    owner_user_id = (request.user_id or "").strip()
+    if not owner_user_id:
+        raise HTTPException(
+            status_code=422,
+            detail="上传美食转盘需要 user_id",
+        )
+
+    normalized = _normalize_food_wheel_items(request.items)
+    if len(normalized) < 2:
+        raise HTTPException(
+            status_code=422,
+            detail="美食转盘至少需要 2 个选项",
+        )
+
+    saved = save_food_wheel_items(owner_user_id, normalized)
+    return {
+        **saved,
+    }
 
 
 @app.post("/api/feedback")
@@ -1855,8 +2058,329 @@ def parse_questions_from_json_text(text: str) -> List[Dict]:
     raise HTTPException(status_code=400, detail="不支持的 JSON 题库结构，请提供 questions/items/list 或章节结构")
 
 
+def _strip_source_noise(text: str) -> str:
+    cleaned = text.replace('\r', '\n')
+    cleaned = re.sub(r'---\s*PAGE\s+\d+\s*---', '\n', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'更多(?:考试)?资料请加[^\n]*', '\n', cleaned)
+    cleaned = re.sub(r'更多考试资料请加[^\n]*', '\n', cleaned)
+    cleaned = re.sub(r'河南大学考试墙[^\n]*', '\n', cleaned)
+    cleaned = re.sub(r'河南大学小过儿[^\n]*', '\n', cleaned)
+    cleaned = re.sub(r'严禁任何个人组织商家盗用或售卖！?', '\n', cleaned)
+    return cleaned
+
+
+def _is_source_noise_line(line: str) -> bool:
+    value = re.sub(r'\s+', '', line or "")
+    if not value:
+        return True
+    if re.fullmatch(r'\d{1,3}', value):
+        return True
+    if re.fullmatch(r'[~*\-—_]+', value):
+        return True
+    if not re.search(r'[\u4e00-\u9fff]', value) and len(value) <= 24:
+        return True
+    return False
+
+
+def _clean_source_lines(text: str) -> str:
+    return "\n".join(
+        line.strip()
+        for line in _strip_source_noise(text).splitlines()
+        if not _is_source_noise_line(line)
+    )
+
+
+def _normalize_structured_chapter(raw: str) -> str:
+    value = re.sub(r'\s+', '', raw or "")
+    if value.startswith("绪论") or value.startswith("导论"):
+        return "导论"
+    if value.startswith("第一章"):
+        return "第一章"
+    if value.startswith("第二章"):
+        return "第二章"
+    if value.startswith("第三章"):
+        return "第三章"
+    if value.startswith("第四章"):
+        return "第四章"
+    if value.startswith("第五章"):
+        return "第五章"
+    if value.startswith("第六章") or value.startswith("第七章"):
+        return "第六章第七章"
+    if value.startswith("所有章节"):
+        return "所有章节判断题"
+    return raw.strip() or "默认章节"
+
+
+def _parse_answer_key(answer_area: str) -> Tuple[Dict[str, Dict[str, Any]], List[bool]]:
+    chapters = ["绪论", "导论", "第一章", "第二章", "第三章", "第四章", "第五章", "第六章", "第七章", "第六章第七章"]
+    parts = re.split("(" + "|".join(chapters) + ")", answer_area.replace("：", ":"))
+    answer_data: Dict[str, Dict[str, Any]] = {}
+    current_chapter: Optional[str] = None
+
+    for part in parts:
+        value = part.strip()
+        if not value:
+            continue
+        if value in chapters:
+            current_chapter = _normalize_structured_chapter(value)
+            answer_data.setdefault(current_chapter, {"single": "", "multi": []})
+            continue
+        if not current_chapter:
+            continue
+
+        single_match = re.search(r'单选\s*:+\s*', value)
+        if single_match:
+            after_single = value[single_match.end():]
+            stop_positions = [
+                match.start()
+                for match in [
+                    re.search(r'多选\s*:+', after_single),
+                    re.search(r'判断\s+', after_single),
+                ]
+                if match
+            ]
+            single_raw = after_single[: min(stop_positions) if stop_positions else len(after_single)]
+            answer_data[current_chapter]["single"] = "".join(re.findall(r'[A-D]', single_raw.upper()))
+
+        multi_match = re.search(r'多选\s*:+\s*', value)
+        if multi_match:
+            after_multi = value[multi_match.end():]
+            judge_match = re.search(r'判断\s+', after_multi)
+            multi_raw = after_multi[: judge_match.start() if judge_match else len(after_multi)]
+            multi_raw = re.sub(r'\d+\s*-\s*\d+', ' ', multi_raw)
+            answer_data[current_chapter]["multi"] = re.findall(r'[A-D]+', multi_raw.upper())
+
+    judge_answers: List[bool] = []
+    judge_match = re.search(r'判断\s+', answer_area)
+    if judge_match:
+        judge_answers = [item == "对" for item in re.findall(r'[对错]', answer_area[judge_match.end():])]
+
+    return answer_data, judge_answers
+
+
+def _split_structured_sections(question_area: str) -> List[Tuple[str, str]]:
+    chapter_pattern = re.compile(
+        r'(?m)^\s*(导论|绪论|第[一二三四五六七]章[^\n]*|所有章节判断题汇总)\s*$'
+    )
+    matches = list(chapter_pattern.finditer(question_area))
+    sections: List[Tuple[str, str]] = []
+    for index, match in enumerate(matches):
+        chapter = _normalize_structured_chapter(match.group(1))
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(question_area)
+        sections.append((chapter, question_area[start:end]))
+    return sections
+
+
+def _split_structured_choice_parts(section_text: str) -> Tuple[str, str]:
+    single_match = re.search(r'一\s*[、.．]\s*单项?选择题', section_text)
+    multi_match = re.search(r'二\s*[、.．]\s*多项?选择题', section_text)
+    if not single_match and not multi_match:
+        return "", ""
+
+    single_text = ""
+    multi_text = ""
+    if single_match:
+        single_start = single_match.end()
+        single_end = multi_match.start() if multi_match else len(section_text)
+        single_text = section_text[single_start:single_end]
+    if multi_match:
+        multi_text = section_text[multi_match.end():]
+    return single_text, multi_text
+
+
+def _extract_structured_options(body: str) -> Tuple[str, List[str]]:
+    cleaned = _clean_source_lines(body)
+    option_pattern = re.compile(
+        r'(?<![A-Za-z])([A-D])(?:[.．、]|\s+|(?=[\u4e00-\u9fff“《]))'
+    )
+    matches = list(option_pattern.finditer(cleaned))
+    if len(matches) < 2:
+        return re.sub(r'\s+', ' ', cleaned).strip(), []
+
+    first_option = matches[0].start()
+    stem = re.sub(r'\s+', ' ', cleaned[:first_option]).strip()
+    options: List[str] = []
+
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(cleaned)
+        option = cleaned[start:end].strip()
+        option = "\n".join(
+            line.strip()
+            for line in option.splitlines()
+            if not _is_source_noise_line(line)
+        )
+        option = re.sub(r'\s+', ' ', option).strip()
+        if option:
+            options.append(option)
+
+    return stem, options
+
+
+def _parse_structured_choice_questions(section_text: str, chapter: str, q_type: str, qid_start: int) -> Tuple[List[Dict], int]:
+    questions: List[Dict[str, Any]] = []
+    starts = list(re.finditer(r'(?m)^\s*(\d+)[.．、）\)]\s*', section_text))
+    for index, match in enumerate(starts):
+        number = match.group(1)
+        start = match.end()
+        end = starts[index + 1].start() if index + 1 < len(starts) else len(section_text)
+        body = section_text[start:end]
+        stem, options = _extract_structured_options(body)
+        if not stem or len(options) < 2:
+            continue
+        questions.append({
+            "id": f"q{qid_start + len(questions):04d}",
+            "number": number,
+            "type": q_type,
+            "content": stem,
+            "options": options[:4],
+            "answer": "",
+            "analysis": "",
+            "chapter": chapter,
+            "chapter_id": f"ch_{chapter}",
+            "stats": {"total": 0, "correct": 0, "rate": 0},
+        })
+    return questions, qid_start + len(questions)
+
+
+def _parse_structured_judge_questions(section_text: str, qid_start: int) -> Tuple[List[Dict], int]:
+    questions: List[Dict[str, Any]] = []
+    cleaned = _clean_source_lines(section_text)
+    starts = list(re.finditer(r'(?m)^\s*(\d+)[.．、）\)]{1,2}\s*', cleaned))
+    for index, match in enumerate(starts):
+        number = match.group(1)
+        start = match.end()
+        end = starts[index + 1].start() if index + 1 < len(starts) else len(cleaned)
+        content = re.sub(r'\s+', ' ', cleaned[start:end]).strip()
+        if not content:
+            continue
+        questions.append({
+            "id": f"q{qid_start + len(questions):04d}",
+            "number": number,
+            "type": "judge",
+            "content": content,
+            "options": None,
+            "answer": "",
+            "analysis": "",
+            "chapter": "所有章节判断题",
+            "chapter_id": "ch_judge",
+            "stats": {"total": 0, "correct": 0, "rate": 0},
+        })
+    return questions, qid_start + len(questions)
+
+
+def _apply_structured_answers(
+    questions: List[Dict],
+    answer_data: Dict[str, Dict[str, Any]],
+    judge_answers: List[bool],
+) -> None:
+    for question in questions:
+        q_type = question.get("type")
+        chapter = question.get("chapter")
+        try:
+            number = int(str(question.get("number") or "0"))
+        except ValueError:
+            continue
+
+        if q_type == "single":
+            answers = str(answer_data.get(chapter, {}).get("single", ""))
+            if 1 <= number <= len(answers):
+                question["answer"] = ord(answers[number - 1]) - 65
+        elif q_type == "multi":
+            groups = answer_data.get(chapter, {}).get("multi", [])
+            if 1 <= number <= len(groups):
+                question["answer"] = sorted(ord(ch) - 65 for ch in groups[number - 1] if "A" <= ch <= "D")
+        elif q_type == "judge":
+            if 1 <= number <= len(judge_answers):
+                question["answer"] = judge_answers[number - 1]
+
+
+def _validate_structured_questions(questions: List[Dict]) -> List[str]:
+    issues: List[str] = []
+    seen_ids: Set[str] = set()
+    for question in questions:
+        qid = str(question.get("id") or "")
+        if qid in seen_ids:
+            issues.append(f"重复题目 ID: {qid}")
+        seen_ids.add(qid)
+
+        q_type = question.get("type")
+        options = question.get("options")
+        answer = question.get("answer")
+        label = f"{qid}/{question.get('chapter')}/{question.get('number')}"
+        if q_type in {"single", "multi"}:
+            if not isinstance(options, list) or len(options) != 4:
+                issues.append(f"{label}: 选择题选项数不是 4")
+            if answer in ("", None, []):
+                issues.append(f"{label}: 缺少答案")
+            if q_type == "single" and isinstance(answer, int) and not (0 <= answer < len(options or [])):
+                issues.append(f"{label}: 单选答案越界")
+            if q_type == "multi" and isinstance(answer, list):
+                for item in answer:
+                    if not isinstance(item, int) or not (0 <= item < len(options or [])):
+                        issues.append(f"{label}: 多选答案越界")
+        elif q_type == "judge":
+            if not isinstance(answer, bool):
+                issues.append(f"{label}: 判断题缺少布尔答案")
+        else:
+            issues.append(f"{label}: 未知题型 {q_type}")
+    return issues
+
+
+def _parse_structured_text_bank(text: str) -> List[Dict]:
+    if "答案速查" not in text or "单项选择题" not in text:
+        return []
+
+    full_text = _strip_source_noise(text)
+    answer_index = full_text.rfind("答案速查")
+    if answer_index < 0:
+        return []
+
+    question_area = full_text[:answer_index]
+    answer_area = full_text[answer_index:]
+    answer_data, judge_answers = _parse_answer_key(answer_area)
+    if not answer_data and not judge_answers:
+        return []
+
+    sections = _split_structured_sections(question_area)
+    if not sections:
+        return []
+
+    questions: List[Dict] = []
+    qid_next = 1
+    for chapter, section_text in sections:
+        if chapter == "所有章节判断题":
+            judge_questions, qid_next = _parse_structured_judge_questions(section_text, qid_next)
+            questions.extend(judge_questions)
+            continue
+
+        single_text, multi_text = _split_structured_choice_parts(section_text)
+        if single_text:
+            single_questions, qid_next = _parse_structured_choice_questions(single_text, chapter, "single", qid_next)
+            questions.extend(single_questions)
+        if multi_text:
+            multi_questions, qid_next = _parse_structured_choice_questions(multi_text, chapter, "multi", qid_next)
+            questions.extend(multi_questions)
+
+    if not questions:
+        return []
+
+    _apply_structured_answers(questions, answer_data, judge_answers)
+    issues = _validate_structured_questions(questions)
+    if issues:
+        sample = "；".join(issues[:12])
+        raise HTTPException(status_code=400, detail=f"结构化题库解析校验失败：{sample}")
+
+    return questions
+
+
 def parse_questions_from_text(text: str) -> List[Dict]:
-    """从文本解析题目 - 支持超紧凑格式（多题选项混在同一行）"""
+    """从文本解析题目 - 支持结构化题库和超紧凑格式。"""
+    structured_questions = _parse_structured_text_bank(text)
+    if structured_questions:
+        return structured_questions
+
     questions = []
     full_text = text.replace('\r', '\n')
 

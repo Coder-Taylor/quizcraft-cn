@@ -131,6 +131,115 @@ def init_schema() -> None:
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_feedbacks_question_index ON feedbacks(question_index)"
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS food_wheel_items (
+                    id BIGSERIAL PRIMARY KEY,
+                    owner_user_id TEXT NOT NULL,
+                    owner_name TEXT NOT NULL DEFAULT '',
+                    items JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    is_public BOOLEAN NOT NULL DEFAULT true,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_name = 'food_wheel_items'
+                        AND column_name = 'owner_user_id'
+                )
+                """
+            )
+            if not cur.fetchone()[0]:
+                cur.execute("ALTER TABLE food_wheel_items RENAME TO food_wheel_items_legacy")
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS food_wheel_items (
+                        id BIGSERIAL PRIMARY KEY,
+                        owner_user_id TEXT NOT NULL,
+                        owner_name TEXT NOT NULL DEFAULT '',
+                        items JSONB NOT NULL DEFAULT '[]'::jsonb,
+                        is_public BOOLEAN NOT NULL DEFAULT true,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                    )
+                    """
+                )
+                cur.execute(
+                    """
+                    INSERT INTO food_wheel_items (
+                        owner_user_id,
+                        owner_name,
+                        items,
+                        is_public,
+                        created_at,
+                        updated_at
+                    )
+                    SELECT
+                        'legacy',
+                        'legacy',
+                        items,
+                        true,
+                        COALESCE(updated_at, now()),
+                        COALESCE(updated_at, now())
+                    FROM food_wheel_items_legacy
+                    WHERE id = 1
+                    """
+                )
+                cur.execute("DROP TABLE food_wheel_items_legacy")
+
+            cur.execute(
+                "ALTER TABLE food_wheel_items ADD COLUMN IF NOT EXISTS owner_user_id TEXT"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ADD COLUMN IF NOT EXISTS owner_name TEXT"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ALTER COLUMN owner_name SET DEFAULT ''"
+            )
+            cur.execute(
+                "UPDATE food_wheel_items SET owner_name = '' WHERE owner_name IS NULL"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ALTER COLUMN owner_name SET NOT NULL"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT true"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ALTER COLUMN created_at SET DEFAULT now()"
+            )
+            cur.execute(
+                "UPDATE food_wheel_items SET created_at = now() WHERE created_at IS NULL"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ALTER COLUMN created_at SET NOT NULL"
+            )
+            cur.execute(
+                "UPDATE food_wheel_items SET owner_user_id = 'legacy' WHERE owner_user_id IS NULL"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ALTER COLUMN owner_user_id SET NOT NULL"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items DROP CONSTRAINT IF EXISTS food_wheel_items_pkey"
+            )
+            cur.execute(
+                "ALTER TABLE food_wheel_items ADD PRIMARY KEY (id)"
+            )
+            cur.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_food_wheel_items_owner_user_id ON food_wheel_items (owner_user_id)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_food_wheel_items_public_updated_at ON food_wheel_items (is_public, updated_at DESC)"
+            )
 
 
 def _rate(correct: int, total: int) -> float:
@@ -142,6 +251,21 @@ def _coerce_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _normalize_food_wheel_items(values: Any) -> List[str]:
+    if not isinstance(values, list):
+        return []
+
+    normalized: List[str] = []
+    seen = set()
+    for value in values:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return normalized
 
 
 def load_runtime_state() -> Tuple[Dict[str, Dict[str, Any]], Dict[str, str], int]:
@@ -737,3 +861,106 @@ def bank_consistency_snapshot() -> Dict[str, Dict[str, Any]]:
         snapshot.setdefault(str(bank_key), {"name": str(bank_key), "total": 0, "questions": {}})
         snapshot[str(bank_key)]["questions"][str(question_id)] = parsed_answer
     return snapshot
+
+
+def list_food_wheel_items(is_public: bool = True) -> List[Dict[str, Any]]:
+    with connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    fw.id,
+                    fw.owner_user_id,
+                    COALESCE(NULLIF(fw.owner_name, ''), u.display_name, fw.owner_user_id) AS owner_name,
+                    fw.items,
+                    fw.is_public,
+                    fw.created_at,
+                    fw.updated_at
+                FROM food_wheel_items fw
+                LEFT JOIN users u ON u.user_id = fw.owner_user_id
+                WHERE fw.is_public = %s
+                ORDER BY fw.updated_at DESC, fw.id DESC
+                """,
+                (is_public,),
+            )
+            rows = cur.fetchall()
+
+    wheels: List[Dict[str, Any]] = []
+    for row in rows:
+        wheel_id, owner_user_id, owner_name, items, public_flag, created_at, updated_at = row
+        normalized_items = _normalize_food_wheel_items(items)
+        wheels.append(
+            {
+                "id": int(wheel_id),
+                "owner_user_id": str(owner_user_id),
+                "owner_name": str(owner_name or owner_user_id),
+                "items": normalized_items,
+                "is_public": bool(public_flag),
+                "created_at": str(created_at),
+                "updated_at": str(updated_at),
+            }
+        )
+    return wheels
+
+
+def upsert_food_wheel_items(owner_user_id: str, items: Iterable[str]) -> Dict[str, Any]:
+    normalized = _normalize_food_wheel_items(list(items))
+    owner = str(owner_user_id).strip()
+    owner_name = ""
+
+    with connect() as conn:
+        with conn.cursor() as cur:
+            if owner:
+                cur.execute(
+                    "SELECT display_name FROM users WHERE user_id = %s",
+                    (owner,),
+                )
+                user_row = cur.fetchone()
+                if user_row is not None:
+                    owner_name = str(user_row[0] or "").strip()
+
+            cur.execute(
+                """
+                INSERT INTO food_wheel_items (
+                    owner_user_id,
+                    owner_name,
+                    items,
+                    is_public
+                )
+                VALUES (%s, %s, %s, TRUE)
+                ON CONFLICT (owner_user_id) DO UPDATE
+                SET owner_name = CASE
+                        WHEN NULLIF(EXCLUDED.owner_name, '') = ''
+                        THEN food_wheel_items.owner_name
+                        ELSE EXCLUDED.owner_name
+                    END,
+                    items = EXCLUDED.items,
+                    is_public = TRUE,
+                    updated_at = now()
+                RETURNING
+                    id,
+                    owner_user_id,
+                    owner_name,
+                    items,
+                    is_public,
+                    created_at,
+                    updated_at
+                """,
+                (owner, owner_name, Jsonb(normalized)),
+            )
+            row = cur.fetchone()
+
+    if row is None:
+        raise RuntimeError("保存美食转盘失败")
+
+    wheel_id, wheel_owner, wheel_owner_name, raw_items, public_flag, created_at, updated_at = row
+    normalized_items = _normalize_food_wheel_items(raw_items)
+    return {
+        "id": int(wheel_id),
+        "owner_user_id": str(wheel_owner),
+        "owner_name": str(wheel_owner_name or wheel_owner),
+        "items": normalized_items,
+        "is_public": bool(public_flag),
+        "created_at": str(created_at),
+        "updated_at": str(updated_at),
+    }
