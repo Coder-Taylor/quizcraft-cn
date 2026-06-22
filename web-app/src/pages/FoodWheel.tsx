@@ -304,8 +304,18 @@ export default function FoodWheel() {
       const cachedUserId = typeof window === 'undefined' ? '' : (localStorage.getItem('user_id')?.trim() || '');
       setSelectedOwner(`我的草稿转盘（已上传）${cachedUserId ? ` · ${cachedUserId}` : ''}`);
       alert('上传成功，已加入公共转盘');
-    } catch {
-      setErrorMessage('上传失败，请先检查网络或登录信息');
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : '上传失败，请先检查网络或登录信息';
+      if (message.includes('user_id')) {
+        setErrorMessage('上传失败，未能获取到当前用户信息，请先刷新页面后重试');
+      } else if (message.includes('网络') || message.includes('Network') || message.includes('Failed to fetch')) {
+        setErrorMessage('上传失败，请先检查网络');
+      } else {
+        setErrorMessage(`上传失败：${message}`);
+      }
     } finally {
       setPublishing(false);
     }

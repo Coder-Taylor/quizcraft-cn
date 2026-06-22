@@ -229,8 +229,53 @@ def init_schema() -> None:
                 "ALTER TABLE food_wheel_items ALTER COLUMN owner_user_id SET NOT NULL"
             )
             cur.execute(
-                "ALTER TABLE food_wheel_items DROP CONSTRAINT IF EXISTS food_wheel_items_pkey"
+                """
+                SELECT con.conname
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                WHERE rel.relname = 'food_wheel_items'
+                  AND con.contype = 'p'
+                """
             )
+            for (pk_name,) in cur.fetchall():
+                if pk_name:
+                    cur.execute(f"ALTER TABLE food_wheel_items DROP CONSTRAINT IF EXISTS {pk_name}")
+
+            cur.execute(
+                """
+                SELECT con.conname
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                WHERE rel.relname = 'food_wheel_items'
+                  AND con.contype = 'c'
+                  AND pg_get_constraintdef(con.oid) LIKE '%%id = 1%%'
+                """
+            )
+            for (check_name,) in cur.fetchall():
+                if check_name:
+                    cur.execute(f"ALTER TABLE food_wheel_items DROP CONSTRAINT IF EXISTS {check_name}")
+
+            cur.execute(
+                """
+                SELECT column_default
+                FROM information_schema.columns
+                WHERE table_name = 'food_wheel_items'
+                  AND column_name = 'id'
+                """
+            )
+            id_default = cur.fetchone()[0]
+            if not id_default or "nextval(" not in str(id_default):
+                cur.execute("CREATE SEQUENCE IF NOT EXISTS food_wheel_items_id_seq")
+                cur.execute("SELECT COALESCE(MAX(id), 0) FROM food_wheel_items")
+                max_id = cur.fetchone()[0] or 0
+                cur.execute(
+                    "SELECT setval('food_wheel_items_id_seq', %s, true)",
+                    (max_id,),
+                )
+                cur.execute(
+                    "ALTER TABLE food_wheel_items ALTER COLUMN id SET DEFAULT nextval('food_wheel_items_id_seq')"
+                )
+
             cur.execute(
                 "ALTER TABLE food_wheel_items ADD PRIMARY KEY (id)"
             )
