@@ -12,6 +12,7 @@ import os
 import traceback
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -305,7 +306,10 @@ def _build_tool_server():
     transport = os.getenv("MCP_TRANSPORT", "streamable-http").strip().lower()
     host_port = int(port)
 
-    mcp = FastMCP("quizcraft-feedback")
+    mcp = FastMCP(
+        "quizcraft-feedback",
+        transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+    )
 
     @mcp.tool()
     def list_feedback(
