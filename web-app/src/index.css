@@ -45,7 +45,6 @@
   background: #0f172a;
   color: #e5e7eb;
   text-align: left;
-  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
 }
 
