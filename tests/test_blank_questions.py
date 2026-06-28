@@ -198,3 +198,47 @@ def test_local_bank_db_sync_defaults_off(monkeypatch, value):
         monkeypatch.delenv("QUIZCRAFT_SYNC_LOCAL_BANKS_TO_DB", raising=False)
 
     assert server.should_sync_local_banks_to_db() is False
+
+
+def test_load_question_banks_prefers_db_when_runtime_enabled(monkeypatch, tmp_path):
+    monkeypatch.setattr(server, "TIKU_DIR", str(tmp_path))
+    monkeypatch.setattr(server, "db_runtime_enabled", lambda: True)
+    monkeypatch.setattr(server, "should_sync_local_banks_to_db", lambda: False)
+    monkeypatch.setattr(
+        server.db_storage,
+        "load_question_banks",
+        lambda: {
+            "db_bank": {
+                "name": "DB 题库",
+                "color": "#1976d2",
+                "metadata": {"name": "DB 题库"},
+                "questions": [
+                    {
+                        "id": "q1",
+                        "number": "1",
+                        "type": "single",
+                        "chapter": "1",
+                        "chapter_id": "ch01",
+                        "content": "题干",
+                        "options": ["A", "B"],
+                        "answer": 0,
+                        "analysis": "",
+                    }
+                ],
+            }
+        },
+    )
+
+    def fail_local_load(*args, **kwargs):
+        raise AssertionError("local JSON should not load when PostgreSQL has banks")
+
+    monkeypatch.setattr(server, "load_bank_from_file", fail_local_load)
+
+    try:
+        server.load_question_banks()
+        assert set(server.QUESTION_BANKS) == {"db_bank"}
+        assert server.QUESTION_BANKS["db_bank"]["file"] == "postgresql:db_bank"
+    finally:
+        server.QUESTION_BANKS.clear()
+        server.QUESTION_CACHE.clear()
+        server.QUESTION_INDEX.clear()

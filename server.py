@@ -504,12 +504,43 @@ def build_standard_bank_data(name: str, questions: List[Dict], color: Optional[s
         "questions": normalized_questions,
     }
 
+def register_db_question_banks() -> int:
+    loaded_from_db = 0
+    for key, db_bank in db_storage.load_question_banks().items():
+        metadata = dict(db_bank.get("metadata") or {})
+        data = {
+            "meta": metadata,
+            "questions": db_bank.get("questions") or [],
+        }
+        register_question_bank(
+            key=key,
+            name=str(db_bank.get("name") or metadata.get("name") or key),
+            color=str(db_bank.get("color") or metadata.get("color") or ""),
+            file_path=f"postgresql:{key}",
+            data=data,
+            files=[],
+        )
+        loaded_from_db += 1
+    return loaded_from_db
+
+
 def load_question_banks():
-    """加载所有题库：本地 tiku JSON 优先，PostgreSQL 作为生产兜底。"""
+    """加载所有题库：生产 PostgreSQL 优先，本地 tiku JSON 仅作兜底或一次性迁移来源。"""
     QUESTION_BANKS.clear()
     QUESTION_CACHE.clear()
     QUESTION_INDEX.clear()
     os.makedirs(TIKU_DIR, exist_ok=True)
+
+    if db_runtime_enabled() and not should_sync_local_banks_to_db():
+        try:
+            loaded_from_db = register_db_question_banks()
+            if loaded_from_db:
+                print(f"✓ 从 PostgreSQL 加载 {loaded_from_db} 个题库")
+                refresh_question_cache()
+                return
+        except Exception as e:
+            print(f"从 PostgreSQL 加载题库失败，将回退到本地 JSON: {e}")
+
     banks = {
         "sixiu": {
             "name": "思想道德与法治",
