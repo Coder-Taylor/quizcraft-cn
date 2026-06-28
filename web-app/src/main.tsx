@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
 import Practice from '@/pages/Practice';
-import Quiz from '@/pages/QuizWithSyntaxHighlight';
+import Quiz from '@/pages/Quiz';
 import Result from '@/pages/Result';
 import Ranking from '@/pages/Ranking';
 import Extract from '@/pages/Extract';

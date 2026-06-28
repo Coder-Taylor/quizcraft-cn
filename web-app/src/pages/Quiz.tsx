@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useQuizStore } from "@/stores/quizStore";
 import { feedbackApi, practiceApi } from "@/api/client";
+import { RichText } from "@/components/RichText";
 import {
   formatQuestionType,
   formatAnswer,
@@ -351,7 +352,9 @@ function OptionButton({
       >
         {label}
       </span>
-      <span className="flex-1 pt-1">{text}</span>
+      <span className="flex-1 pt-1">
+        <RichText text={text} />
+      </span>
       {showResult && correct && selected && (
         <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
       )}
@@ -850,7 +853,7 @@ export default function Quiz() {
           </div>
 
           <h2 className="text-lg font-medium text-gray-800 mb-6 leading-relaxed">
-            {question.content}
+            <RichText text={question.content} />
           </h2>
 
           <div className="space-y-3 mb-6">
@@ -949,7 +952,7 @@ export default function Quiz() {
                     解析
                   </div>
                   <div className="text-sm text-gray-600 leading-relaxed">
-                    {result.analysis}
+                    <RichText text={result.analysis} />
                   </div>
                 </div>
               )}
@@ -1070,7 +1073,7 @@ export default function Quiz() {
             </div>
 
             <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm leading-relaxed text-gray-600">
-              {activeQuestion.content}
+              <RichText text={activeQuestion.content} />
             </div>
 
             <form onSubmit={handleFeedbackSubmit} className="space-y-3">
