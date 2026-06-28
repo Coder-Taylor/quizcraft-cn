@@ -1,0 +1,15 @@
+# Android 项目忽略文件
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.aab
+*.keystore
+*.jks
+app/build/
+app/release/
