@@ -13,6 +13,7 @@ if [ -n "${STATIC_DEPLOY_DIR}" ]; then
     exit 1
   fi
   cp -f dist/index.html "${STATIC_DEPLOY_DIR}/"
+  rm -rf "${STATIC_DEPLOY_DIR}/assets"
   mkdir -p "${STATIC_DEPLOY_DIR}/assets"
   cp -rf dist/assets/. "${STATIC_DEPLOY_DIR}/assets/"
   if [ -f dist/wechat-receive-qrcode.jpg ]; then
