@@ -1390,49 +1390,6 @@ def normalize_choice_answer(
     if letters:
         return choice_letters_to_answer(letters, q_type)
 
-    if isinstance(answer, str) and options:
-        normalized_answer = normalize_text_for_match(answer)
-        if normalized_answer:
-            matched_indices = [
-                index
-                for index, option in enumerate(options)
-                if normalize_text_for_match(option) == normalized_answer
-            ]
-            if matched_indices:
-                if q_type == "multi" or len(matched_indices) > 1:
-                    return "multi", matched_indices
-                return "single", matched_indices[0]
-
-            contained_indices = [
-                index
-                for index, option in enumerate(options)
-                if normalize_text_for_match(option)
-                and normalize_text_for_match(option) in normalized_answer
-            ]
-            if q_type == "multi" and len(contained_indices) > 1:
-                return "multi", contained_indices
-
-            answer_parts = [
-                normalize_text_for_match(part)
-                for part in re.split(r"[、；;]+", answer)
-                if normalize_text_for_match(part)
-            ]
-            if len(answer_parts) > 1:
-                split_indices: List[int] = []
-                for part in answer_parts:
-                    matches = [
-                        index
-                        for index, option in enumerate(options)
-                        if normalize_text_for_match(option) == part
-                    ]
-                    if len(matches) != 1:
-                        split_indices = []
-                        break
-                    if matches[0] not in split_indices:
-                        split_indices.append(matches[0])
-                if split_indices:
-                    return "multi", split_indices
-
     return infer_choice_answer_from_analysis(analysis, options, q_type, stem)
 
 
@@ -2783,89 +2740,8 @@ def _parse_structured_text_bank(text: str) -> List[Dict]:
     return questions
 
 
-def _parse_markdown_heading_bank(text: str) -> List[Dict]:
-    heading_pattern = re.compile(
-        r'(?m)^##\s*(?P<number>\d+)[.．、]\s*(?P<type>单选题|多选题|判断题|填空题)\s*$'
-    )
-    headings = list(heading_pattern.finditer(text))
-    if not headings:
-        return []
-
-    title_pattern = re.compile(r'(?m)^#\s+(?!#)(?P<title>.+?)\s*$')
-    titles = list(title_pattern.finditer(text))
-    answer_pattern = re.compile(r'(?m)^\s*(?:\*\*)?\s*答案\s*[：:]\s*(?P<answer>.+?)\s*(?:\*\*)?\s*$')
-    option_pattern = re.compile(r'(?m)^\s*(?:[-*]\s*)?(?P<label>[A-F])[.．、]\s*(?P<text>.+?)\s*$')
-    type_map = {"单选题": "single", "多选题": "multi", "判断题": "judge", "填空题": "blank"}
-    chapter_to_id: Dict[str, str] = {}
-    questions: List[Dict[str, Any]] = []
-
-    def clean_markdown_text(value: str) -> str:
-        lines = []
-        for raw_line in value.replace("\r", "\n").splitlines():
-            line = raw_line.strip()
-            if not line or line == "---":
-                continue
-            lines.append(line)
-        return re.sub(r'\s+', ' ', "\n".join(lines)).strip()
-
-    def strip_answer_markup(value: str) -> str:
-        return re.sub(r'\s+', ' ', value.strip().strip("*").strip()).strip()
-
-    def chapter_for(position: int) -> str:
-        chapter = "默认章节"
-        for title in titles:
-            if title.start() > position:
-                break
-            chapter = re.sub(r'（共\d+题）', '', title.group("title")).strip() or chapter
-        return chapter
-
-    def chapter_id_for(chapter: str) -> str:
-        if chapter not in chapter_to_id:
-            chapter_to_id[chapter] = f"ch{len(chapter_to_id) + 1:02d}"
-        return chapter_to_id[chapter]
-
-    for index, heading in enumerate(headings):
-        block_start = heading.end()
-        block_end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
-        block = text[block_start:block_end]
-        raw_type = heading.group("type")
-        q_type = type_map[raw_type]
-        answer_match = answer_pattern.search(block)
-        answer = strip_answer_markup(answer_match.group("answer")) if answer_match else ""
-        answer_start = answer_match.start() if answer_match else len(block)
-        question_area = block[:answer_start]
-
-        options = [match.group("text").strip() for match in option_pattern.finditer(question_area)]
-        first_option = next(option_pattern.finditer(question_area), None)
-        content_area = question_area[: first_option.start()] if first_option else question_area
-        content = clean_markdown_text(content_area)
-        if not content:
-            continue
-
-        chapter = chapter_for(heading.start())
-        question: Dict[str, Any] = {
-            "id": f"q{len(questions) + 1:04d}",
-            "number": str(heading.group("number")),
-            "type": q_type,
-            "content": content,
-            "options": options if options else None,
-            "answer": answer,
-            "analysis": "",
-            "chapter": chapter,
-            "chapter_id": chapter_id_for(chapter),
-            "stats": {"total": 0, "correct": 0, "rate": 0},
-        }
-        questions.append(question)
-
-    return questions
-
-
 def parse_questions_from_text(text: str) -> List[Dict]:
     """从文本解析题目 - 支持结构化题库和超紧凑格式。"""
-    markdown_questions = _parse_markdown_heading_bank(text)
-    if markdown_questions:
-        return markdown_questions
-
     structured_questions = _parse_structured_text_bank(text)
     if structured_questions:
         return structured_questions

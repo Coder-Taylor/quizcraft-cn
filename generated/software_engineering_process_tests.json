@@ -2,7 +2,7 @@
   "meta": {
     "name": "软件工程过程性测试",
     "version": "1.0.0",
-    "created_at": "2026-06-30T22:08:22.656756",
+    "created_at": "2026-06-30T23:29:52.441900",
     "total": 90,
     "chapter_count": 1,
     "color": "#1565c0",
@@ -184,7 +184,7 @@
     {
       "id": "q0009",
       "number": "9",
-      "type": "multi",
+      "type": "single",
       "content": "用例图中,当一个用例只在一定条件下比另一个用例增加少数步骤时,用哪种关系建模最合适?()",
       "analysis": "",
       "chapter": "软件工程第一次过程性测试",
@@ -200,10 +200,7 @@
         "includes",
         "inherits"
       ],
-      "answer": [
-        4,
-        3
-      ]
+      "answer": 1
     },
     {
       "id": "q0010",
@@ -661,7 +658,7 @@
       "number": "32",
       "type": "judge",
       "content": "经验估算模型是基于来自历史项目数据的回归模型。()",
-      "analysis": "原 Markdown 此题答案为空；按同题资料“经验估算模型是基于来自历史项目数据的回归模型”补正为正确。",
+      "analysis": "原始题库答案缺失，导入时按人工核对结果补正。",
       "chapter": "软件工程第一次过程性测试",
       "chapter_id": "ch01",
       "stats": {
@@ -887,7 +884,7 @@
       "content": "黑盒测试是根据程序的()来设计测试用例。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -908,7 +905,7 @@
       "content": "()是从现有的程序代码中抽取有关数据、体系结构和处理过程的设计信息,以便恢复设计结果。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -929,7 +926,7 @@
       "content": "一个创业团队想要开发一款社交App，但是他们对于可能的发展的业务仍不十分明确，此时希望能够开发一个相对简单的版本进行原始的需求验证与测试，这种情况比较适合选择（ ）数据库。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -950,7 +947,7 @@
       "content": "人们不会把 [ ]( )[ ] 中的“](”认作一对，原因是视觉认知中的（ ）定律在起作用。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -971,7 +968,7 @@
       "content": "()是为了获得高质量软件而实施的一系列活动,包括问题定义、需求开发、软件设计、软件构造、软件测试等。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -992,7 +989,7 @@
       "content": "()是为了有效地发现软件缺陷而精心设计的少量测试数据。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1013,7 +1010,7 @@
       "content": "()是增加或修改系统功能,使其适应业务的变化。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1034,7 +1031,7 @@
       "content": "关于等价类划分,下面的()说法是正确的。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1055,7 +1052,7 @@
       "content": "下面的()需求获取方法最适用于身处多个不同地点的人在各自方便的时间参与,围绕同一个主题表达自己的观点。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1076,7 +1073,7 @@
       "content": "下面的()是对提高程序编码效率没有影响的。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1097,7 +1094,7 @@
       "content": "()是将一个复杂问题分解成若干个简单问题,然后逐个解决。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1118,7 +1115,7 @@
       "content": "下面的()需求获取方法最适用于身处多个不同地点的人在各自方便的时间参与,围绕同一个主题表达自己的观点。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1139,7 +1136,7 @@
       "content": "软件工程方法是()。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1160,7 +1157,7 @@
       "content": "()是由于计算机软件和硬件环境变化而修改软件的过程。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1181,7 +1178,7 @@
       "content": "下面的()不属于系统总体设计的任务。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1202,7 +1199,7 @@
       "content": "单元测试内容不包括()。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1219,11 +1216,11 @@
     {
       "id": "q0062",
       "number": "17",
-      "type": "multi",
+      "type": "single",
       "content": "如今社交文化横行，大数据分析遍地，几乎所有的应用与产品都多少会与社交网络或大用户量、大数据相关联。如果准备开发一个较完整的社交网络应用，支持10万以上日活跃用户进行各种点赞、评论等交互活动，应该采用（ ）数据库或数据库组合。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1235,10 +1232,7 @@
         "Mongo",
         "Mongo + Redis"
       ],
-      "answer": [
-        4,
-        3
-      ]
+      "answer": 3
     },
     {
       "id": "q0063",
@@ -1247,7 +1241,7 @@
       "content": "下面的()不是性能测试的目的。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1268,7 +1262,7 @@
       "content": "下面的()是Scrum方法的优点。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1289,7 +1283,7 @@
       "content": "对顺序图与用例之间关系的阐述，错误的是（ ）。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1310,7 +1304,7 @@
       "content": "下面的()是敏捷开发的基本原则。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1335,7 +1329,7 @@
       "content": "良好设计的特征是（ ）。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1359,7 +1353,7 @@
       "content": "下面的()是测试用例的设计要求。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1384,7 +1378,7 @@
       "content": "关于等价类划分法,不正确的说法是()。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1409,7 +1403,7 @@
       "content": "Web应用功能测试主要用来测试Web应用软件是否履行了预期功能,包括()。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1422,8 +1416,10 @@
         "内容测试"
       ],
       "answer": [
+        0,
+        1,
         2,
-        4
+        3
       ]
     },
     {
@@ -1433,7 +1429,7 @@
       "content": "顺序图的组合控制框（Frame）中，用于表达分支选择关系的控制符是loop。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1449,7 +1445,7 @@
       "content": "系统的性能测试包括压力测试、容量测试、安全测试和可靠性测试等。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1465,7 +1461,7 @@
       "content": "用同一等价类中的任意输入对软件进行测试,软件都输出相同的结果。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1481,7 +1477,7 @@
       "content": "好的命名应一目了然,不需要读者去猜,甚至不需要注释。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1497,7 +1493,7 @@
       "content": "影响维护成本的因素与团队的合作能力和稳定性有关,与团队成员的技术水平关系不大。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1513,7 +1509,7 @@
       "content": "造成大型软件开发困难的根本原因在于项目开发进度不合理。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1529,7 +1525,7 @@
       "content": "提高模块的可靠性和复用性是模块化设计的目的之一。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1545,7 +1541,7 @@
       "content": "软件需求工程师的职责是控制项目的风险。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1561,7 +1557,7 @@
       "content": "软件维护的工作就是为了改正软件的缺陷而对软件进行修改,修改通常发生在局部,一般不会改变系统的整体结构。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1577,7 +1573,7 @@
       "content": "“我们的任务是提供叫车与车辆信息服务来解决司机与乘客的问题” 描述了“滴滴打车”的业务需求。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1593,7 +1589,7 @@
       "content": "白盒测试是静态测试,黑盒测试是动态测试。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1609,7 +1605,7 @@
       "content": "顺序图中带条件消息的发送，不能分成多个顺序图子图来描述。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1625,7 +1621,7 @@
       "content": "第一个装载GUI操作系统的计算机是微软公司的Windows。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1641,7 +1637,7 @@
       "content": "在软件配置管理中,基线的目的是合理控制变更。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1657,7 +1653,7 @@
       "content": "动态测试可以使用手工测试或自动化测试的方式进行。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1673,7 +1669,7 @@
       "content": "软件再工程的成本比重新开发软件的成本要小得多。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1689,7 +1685,7 @@
       "content": "软件工程的基本目标是开发足够好的软件。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1705,7 +1701,7 @@
       "content": "条件组合覆盖是最强的逻辑覆盖准则。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1721,7 +1717,7 @@
       "content": "软件维护工作需要长期进行,导致维护的成本不断增加。( )",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
@@ -1737,7 +1733,7 @@
       "content": "在MVC、Restful API、RPC架构中，MVC架构可以更好地实现Web应用的前后端分离。",
       "analysis": "",
       "chapter": "软件工程第二次过程性测试",
-      "chapter_id": "ch02",
+      "chapter_id": "ch01",
       "stats": {
         "total": 0,
         "correct": 0,
