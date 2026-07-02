@@ -24,7 +24,6 @@ const navItems = IS_OPS_MODE
       { path: '/practice', icon: BookOpen, label: '刷题' },
       { path: '/ranking', icon: Trophy, label: '排行榜' },
       { path: '/feedback-board', icon: MessageSquare, label: '反馈看板' },
-      { path: '/wheel', icon: Dices, label: '随机大转盘' },
     ]
   : [
       { path: '/', icon: Home, label: '首页' },

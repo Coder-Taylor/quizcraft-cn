@@ -29,7 +29,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="ranking" element={<Ranking />} />
           <Route path="feedback" element={<Feedback />} />
           <Route path="feedback-board" element={<FeedbackBoard />} />
-          <Route path="wheel" element={<FoodWheel />} />
+          <Route
+            path="wheel"
+            element={IS_OPS_MODE ? <Navigate to="/practice" replace /> : <FoodWheel />}
+          />
           <Route
             path="extract"
             element={IS_OPS_MODE ? <Navigate to="/practice" replace /> : <Extract />}
