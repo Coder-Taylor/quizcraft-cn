@@ -10,7 +10,7 @@ import {
   MessageCircle,
   MessageSquare,
   Moon,
-  Smartphone,
+  Download,
   Sun,
   X,
 } from 'lucide-react';
@@ -119,10 +119,10 @@ export default function Layout() {
             <button
               type="button"
               onClick={() => downloadDialogRef.current?.showModal()}
-              className="ml-1 hidden sm:flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+              className="ml-1 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
             >
-              <Smartphone className="h-4 w-4" />
-              <span>下载 App</span>
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">下载 App</span>
             </button>
             )}
           </nav>
@@ -285,7 +285,7 @@ export default function Layout() {
         <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">Android 客户端，支持外接键盘操控、应用内自动更新</p>
         <div className="space-y-3">
           <a href="http://47.94.146.53/QuizCraft-2.1.0.apk" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary-500 hover:bg-[#3366BA] px-4 py-3 text-sm font-medium text-white transition-colors">
-            <Smartphone className="h-4 w-4" />
+            <Download className="h-4 w-4" />
             直接下载 APK（推荐）
           </a>
           <a href="https://gitee.com/taylorchengitee/Android-exam-solving-assistant/releases" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
