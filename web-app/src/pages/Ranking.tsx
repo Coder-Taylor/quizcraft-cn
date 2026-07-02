@@ -17,6 +17,26 @@ const getRankBg = (index: number) => {
   return 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700';
 };
 
+const getRankText = (index: number) => {
+  if (index < 3) {
+    return {
+      name: 'text-gray-800',
+      detail: 'text-gray-500',
+      accuracyLabel: 'text-gray-500',
+      avatarBg: 'bg-gray-100',
+      avatarIcon: 'text-gray-400',
+    };
+  }
+
+  return {
+    name: 'text-gray-800 dark:text-slate-100',
+    detail: 'text-gray-500 dark:text-slate-400',
+    accuracyLabel: 'text-gray-400 dark:text-slate-500',
+    avatarBg: 'bg-gray-100 dark:bg-slate-700',
+    avatarIcon: 'text-gray-400 dark:text-slate-500',
+  };
+};
+
 export default function Ranking() {
   const [ranking, setRanking] = useState<RankItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,39 +79,43 @@ export default function Ranking() {
         </div>
       ) : ranking.length > 0 ? (
         <div className="space-y-3">
-          {ranking.map((item, index) => (
-            <div
-              key={item.user_id}
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${getRankBg(index)}`}
-            >
-              <div className="flex-shrink-0">
-                {getRankIcon(index)}
-              </div>
-              
-              <div className="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-gray-400 dark:text-slate-500" />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-800 dark:text-slate-100 truncate">
-                  {item.user_id}
+          {ranking.map((item, index) => {
+            const rankText = getRankText(index);
+
+            return (
+              <div
+                key={item.user_id}
+                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${getRankBg(index)}`}
+              >
+                <div className="flex-shrink-0">
+                  {getRankIcon(index)}
                 </div>
-                <div className="text-sm text-gray-500 dark:text-slate-400">
-                  答对 {item.correct} / {item.total} 题
+
+                <div className={`flex-shrink-0 w-10 h-10 ${rankText.avatarBg} rounded-full flex items-center justify-center`}>
+                  <User className={`w-5 h-5 ${rankText.avatarIcon}`} />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className={`font-medium ${rankText.name} truncate`}>
+                    {item.user_id}
+                  </div>
+                  <div className={`text-sm ${rankText.detail}`}>
+                    答对 {item.correct} / {item.total} 题
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className={`text-lg font-bold ${
+                    item.accuracy >= 80 ? 'text-green-600' :
+                    item.accuracy >= 60 ? 'text-blue-600' : 'text-gray-600 dark:text-slate-300'
+                  }`}>
+                    {item.accuracy}%
+                  </div>
+                  <div className={`text-xs ${rankText.accuracyLabel}`}>正确率</div>
                 </div>
               </div>
-              
-              <div className="text-right">
-                <div className={`text-lg font-bold ${
-                  item.accuracy >= 80 ? 'text-green-600' : 
-                  item.accuracy >= 60 ? 'text-blue-600' : 'text-gray-600 dark:text-slate-300'
-                }`}>
-                  {item.accuracy}%
-                </div>
-                <div className="text-xs text-gray-400 dark:text-slate-500">正确率</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">

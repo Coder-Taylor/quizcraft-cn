@@ -136,6 +136,26 @@ assert.match(
 
 assert.match(
   inlineCodeRule,
+  /display:\s*inline-flex;/,
+  "inline code must align as a single inline box with its surrounding text",
+);
+assert.match(
+  inlineCodeRule,
+  /align-items:\s*center;/,
+  "inline code content must be vertically centered inside the code chip",
+);
+assert.doesNotMatch(
+  inlineCodeRule,
+  /vertical-align:\s*baseline;/,
+  "inline code must not use baseline alignment because it sits too high beside Chinese text",
+);
+assert.match(
+  inlineCodeRule,
+  /line-height:\s*1\.15;/,
+  "inline code must keep its own compact line height instead of inheriting option text leading",
+);
+assert.match(
+  inlineCodeRule,
   /white-space:\s*pre-wrap;/,
   "inline code must wrap instead of forcing a single long line",
 );
